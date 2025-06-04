@@ -42,6 +42,12 @@ public final class JavaPluginMain extends JavaPlugin {
     }
 
     @Override
+    public void onDisable() {
+        MqttClientStart.getInstance().closed();
+        getLogger().info("插件已卸载!");
+    }
+
+    @Override
     public void onEnable() {
         getLogger().info("日志");
         EventChannel<Event> eventChannel = GlobalEventChannel.INSTANCE.parentScope(this);

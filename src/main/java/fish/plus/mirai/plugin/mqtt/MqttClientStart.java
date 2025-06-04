@@ -96,6 +96,16 @@ public class MqttClientStart {
         }
     }
 
+    public void closed(){
+        if (mqttClient != null && mqttClient.isConnected()) {
+            try {
+                mqttClient.close(true);
+            } catch (MqttException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     private void startListeningThread() {
         new Thread(() -> {
             while (true) {
