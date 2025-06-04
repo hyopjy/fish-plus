@@ -1,17 +1,35 @@
 plugins {
-    val kotlinVersion = "1.6.10"
+    val kotlinVersion = "1.7.20"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
 
-    id("net.mamoe.mirai-console") version "2.13.2"
+//    id("net.mamoe.mirai-console") version "2.13.2"
+    id("net.mamoe.mirai-console") version "2.16.0"
 }
 
-group = "org.example"
+group = "fish.plus"
 version = "0.1.0"
 
 repositories {
     if (System.getenv("CI")?.toBoolean() != true) {
         maven("https://maven.aliyun.com/repository/public") // 阿里云国内代理仓库
     }
+    maven("https://central.sonatype.com/repository/maven-snapshots/")
     mavenCentral()
+}
+
+mirai {
+    noTestCore = true
+    setupConsoleTestRuntime {
+        // 移除 mirai-core 依赖
+        classpath = classpath.filter {
+            !it.nameWithoutExtension.startsWith("mirai-core-jvm")
+        }
+    }
+}
+dependencies {
+    // 若需要使用 Overflow 的接口，请取消注释下面这行
+    // compileOnly("top.mrxiaom:overflow-core-api:$VERSION")
+    val VERSION = "1.0.5"
+    testConsoleRuntime("top.mrxiaom.mirai:overflow-core:$VERSION")
 }
