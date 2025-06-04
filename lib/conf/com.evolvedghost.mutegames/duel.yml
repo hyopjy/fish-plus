@@ -1,0 +1,70 @@
+# 自定义指令触发决斗
+# 请注意，该自定义指令的更改必须重启Mirai
+alias: 
+  - 决斗
+# 决斗等待时间，超过后上一个决斗失效，单位：秒
+waitTime: 300
+# 随机决斗击中部位表<部位名:<禁言时间:秒,击中概率:Int>>
+# 概率可为任意值，值越大概率越高，插件会将全部作为整体计算概率（别超过Int范围即可）
+# ban为禁言时间，以秒为单位，范围1-2592000，超出范围的会被抛弃
+position: 
+  身体: 
+    ban: 100
+    chance: 35
+  腿🦵: 
+    ban: 90
+    chance: 20
+  脚🦶: 
+    ban: 60
+    chance: 10
+  小心心💘: 
+    ban: 600
+    chance: 1
+  脸蛋👧: 
+    ban: 180
+    chance: 15
+  手背🫳: 
+    ban: 120
+    chance: 10
+  肩膀🤷‍♀: 
+    ban: 90
+    chance: 15
+# 随机决斗是否可能两败俱伤，设置-1为不可能事件，设置100为必然事件，设置0-100中间的数量为触发概率
+allHurt: -1
+# 起始消息，可用替代项目为:
+# <target> @触发人
+# <timeout-s> 超时时间（单位秒）（例:5）
+# <timeout-f> 超时时间（例:11天4时5分14秒）
+messageStartDuel: '<target> 开启了决斗，一个有价值的对手不会在<timeout-f>超时后才到来。'
+# 起始消息，可用替代项目为:
+# <target> @触发人
+messageSameMember: '<target> 你不能自己决斗自己'
+# 决斗消息，可用替代项目为:
+# <target-win> @获胜者
+# <target-lose> @失败者
+# <position> 击伤部位
+# <mute-s> 禁言时间（单位秒）（例:5）
+# <mute-f> 禁言时间（例:11天4时5分14秒）
+messageEndDuel: '[决斗]<target-win> 😙了一口<target-lose> 的【<position>】，让对方被冲昏了<mute-f>头脑。恭喜<target-win> 获得一分！'
+# 决斗消息但对方是管理员无法禁言，可用替代项目为:
+# <target-win> @获胜者
+# <target-lose> @失败者
+# <position> 击伤部位
+# <mute-s> 禁言时间（单位秒）（例:5）
+# <mute-f> 禁言时间（例:11天4时5分14秒）
+messageEndDuelButAdmin: '<target-lose> 的<position>被<target-win> 开枪击中，但对方是管理员，逃掉了<mute-f>的禁言'
+# 两败俱伤消息，可用替代项目为:
+# <target-1> @决斗者1
+# <target-2> @决斗者2
+# <position-1> 击伤部位1
+# <position-2> 击伤部位2
+# <mute-s-1> 禁言时间1（单位秒）（例:5）
+# <mute-s-2> 禁言时间2
+# <mute-f-1> 禁言时间1（例:11天4时5分14秒）
+# <mute-f-2> 禁言时间2
+messageEndDuelAllHurt: '两位决斗者同时亲亲，<target-2> 😙了一口<target-1> 的【<position-1>】，让对方被冲昏了<mute-f-1>头脑，<target-1> 😙了一口<target-2> 的【<position-2>】，让对方被冲昏了<mute-f-2>头脑，两人👩‍❤️‍💋‍👩在一起难解难分'
+# 超时消息，可用替代项目为:
+# <target> @触发人
+# <timeout-s> 超时时间（单位秒）（例:5）
+# <timeout-f> 超时时间（例:11天4时5分14秒）
+messageTimeout: '<target> 的决斗超时'

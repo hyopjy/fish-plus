@@ -1,0 +1,9 @@
+# 自定义指令触发管理指令
+# 请注意，该自定义指令的更改必须重启Mirai
+alias: 
+  - 禁言游戏
+  - mutegame
+# 提供一些基础的Debug信息，包括插件内部运行情况并输出所有的Exception
+debug: false
+# 管理员/群主等比机器人权限同级或更高的能否游玩？
+canAdminPlayIt: true

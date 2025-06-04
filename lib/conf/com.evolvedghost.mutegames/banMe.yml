@@ -1,0 +1,19 @@
+# 自定义指令触发自裁
+# 请注意，该自定义指令的更改必须重启Mirai
+alias: 
+  - 自裁
+# 是否允许群友自己确定禁言时间
+allowCustomBanMe: true
+# 是否随机自裁禁言时间
+randomBanMe: true
+# 自裁禁言时间(秒)(至少为1)
+# 如果随机自裁禁言为true则此值为随机的最小值
+banMeTime: 60
+# 最大自裁禁言时间(秒)(最大2592000)
+# 如果随机自裁禁言为false则不会有任何作用
+banMeTimeMax: 600
+# 触发消息，可用替代项目为:
+# <target> @触发人
+# <mute-s> 禁言时间（单位秒）（例:5）
+# <mute-f> 禁言时间（例:11天4时5分14秒）
+messageBanMe: '恭喜<target> 获得<mute-f>禁言'
