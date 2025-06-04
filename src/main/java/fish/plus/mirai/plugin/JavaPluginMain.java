@@ -1,6 +1,7 @@
 package fish.plus.mirai.plugin;
 
 import fish.plus.mirai.plugin.mqtt.MqttClientStart;
+import fish.plus.mirai.plugin.util.Log;
 import kotlin.Lazy;
 import kotlin.LazyKt;
 import net.mamoe.mirai.console.permission.*;
@@ -44,7 +45,7 @@ public final class JavaPluginMain extends JavaPlugin {
     @Override
     public void onDisable() {
         MqttClientStart.getInstance().closed();
-        getLogger().info("插件已卸载!");
+        Log.info("插件已卸载!");
     }
 
     @Override
