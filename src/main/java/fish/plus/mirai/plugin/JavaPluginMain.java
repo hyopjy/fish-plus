@@ -1,5 +1,6 @@
 package fish.plus.mirai.plugin;
 
+import fish.plus.mirai.plugin.mqtt.MqttClientStart;
 import kotlin.Lazy;
 import kotlin.LazyKt;
 import net.mamoe.mirai.console.permission.*;
@@ -55,6 +56,10 @@ public final class JavaPluginMain extends JavaPlugin {
         });
 
         myCustomPermission.getValue(); // 注册权限
+
+        MqttClientStart mqttClientUtil = MqttClientStart.getInstance();
+        mqttClientUtil.subscribeTopic("test/topic");
+        mqttClientUtil.publishMessage("test/topic", "Hello MQTT!");
     }
 
     // region mirai-console 权限系统示例

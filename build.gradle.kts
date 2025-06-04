@@ -30,6 +30,10 @@ mirai {
 dependencies {
     // 若需要使用 Overflow 的接口，请取消注释下面这行
     // compileOnly("top.mrxiaom:overflow-core-api:$VERSION")
+// https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3
+    implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
+
     val VERSION = "1.0.5"
     testConsoleRuntime("top.mrxiaom.mirai:overflow-core:$VERSION")
+
 }
