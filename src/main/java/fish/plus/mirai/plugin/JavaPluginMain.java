@@ -2,6 +2,7 @@ package fish.plus.mirai.plugin;
 
 import cn.hutool.core.collection.CollectionUtil;
 import fish.plus.mirai.plugin.event.BotPostSendEventListener;
+import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.mqtt.MqttClientStart;
 import fish.plus.mirai.plugin.util.HibernateUtil;
 import fish.plus.mirai.plugin.util.Log;
@@ -17,8 +18,6 @@ import net.mamoe.mirai.contact.User;
 import net.mamoe.mirai.event.Event;
 import net.mamoe.mirai.event.EventChannel;
 import net.mamoe.mirai.event.GlobalEventChannel;
-import net.mamoe.mirai.event.events.FriendMessageEvent;
-import net.mamoe.mirai.event.events.GroupMessageEvent;
 
 import java.util.List;
 
@@ -75,6 +74,7 @@ public final class JavaPluginMain extends JavaPlugin {
 //        MqttClientStart.getInstance();
         //初始化插件数据库
         HibernateUtil.init(this);
+        RodeoManager.init();
 
         EventChannel<Event> eventChannel = GlobalEventChannel.INSTANCE.parentScope(this);
         eventChannel.registerListenerHost(new BotPostSendEventListener());
