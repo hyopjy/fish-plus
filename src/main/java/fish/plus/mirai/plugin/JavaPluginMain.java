@@ -1,5 +1,6 @@
 package fish.plus.mirai.plugin;
 
+import fish.plus.mirai.plugin.event.BotPostSendEventListener;
 import fish.plus.mirai.plugin.mqtt.MqttClientStart;
 import fish.plus.mirai.plugin.util.Log;
 import kotlin.Lazy;
@@ -51,22 +52,29 @@ public final class JavaPluginMain extends JavaPlugin {
     @Override
     public void onEnable() {
         getLogger().info("日志");
-        EventChannel<Event> eventChannel = GlobalEventChannel.INSTANCE.parentScope(this);
-        eventChannel.subscribeAlways(GroupMessageEvent.class, g -> {
-            //监听群消息
-            getLogger().info(g.getMessage().contentToString());
+        // 初始化mqtt
+        MqttClientStart.getInstance();
 
-        });
-        eventChannel.subscribeAlways(FriendMessageEvent.class, f -> {
-            //监听好友消息
-            getLogger().info(f.getMessage().contentToString());
-        });
+
+        EventChannel<Event> eventChannel = GlobalEventChannel.INSTANCE.parentScope(this);
+        eventChannel.registerListenerHost(new BotPostSendEventListener());
+//        eventChannel.subscribeAlways(GroupMessageEvent.class, g -> {
+//            //监听群消息
+//            getLogger().info(g.getMessage().contentToString());
+//            MqttClientStart.getInstance().subscribeTopic("test/topic");
+//            MqttClientStart.getInstance().publishMessage("test/topic", g.getMessage().contentToString());
+//
+//        });
+//        eventChannel.subscribeAlways(FriendMessageEvent.class, f -> {
+//            //监听好友消息
+//            getLogger().info(f.getMessage().contentToString());
+//        });
 
         myCustomPermission.getValue(); // 注册权限
 
-        MqttClientStart mqttClientUtil = MqttClientStart.getInstance();
-        mqttClientUtil.subscribeTopic("test/topic");
-        mqttClientUtil.publishMessage("test/topic", "Hello MQTT!");
+//        MqttClientStart mqttClientUtil = MqttClientStart.getInstance();
+//        mqttClientUtil.subscribeTopic("test/topic");
+//        mqttClientUtil.publishMessage("test/topic", "Hello MQTT!");
     }
 
     // region mirai-console 权限系统示例
