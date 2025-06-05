@@ -27,6 +27,7 @@ public class RodeoEndTask implements Task {
         if(Objects.isNull(strategy)){
             return;
         }
+        // todo 取消权限
         strategy.endGame(rodeo);
     }
 }

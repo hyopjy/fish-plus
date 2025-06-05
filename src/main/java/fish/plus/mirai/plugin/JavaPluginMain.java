@@ -1,6 +1,7 @@
 package fish.plus.mirai.plugin;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.cron.CronUtil;
 import fish.plus.mirai.plugin.event.BotPostSendEventListener;
 import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.mqtt.MqttClientStart;
@@ -50,6 +51,7 @@ public final class JavaPluginMain extends JavaPlugin {
     @Override
     public void onDisable() {
         MqttClientStart.getInstance().closed();
+        CronUtil.stop();
         Log.info("插件已卸载!");
     }
 
@@ -72,6 +74,7 @@ public final class JavaPluginMain extends JavaPlugin {
         getLogger().info("日志");
         // 初始化mqtt
 //        MqttClientStart.getInstance();
+        CronUtil.start();
         //初始化插件数据库
         HibernateUtil.init(this);
         RodeoManager.init();

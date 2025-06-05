@@ -120,7 +120,7 @@ public class RodeoManager {
                 // todo 判断时间
                 // todo 判断用户
                 for(String p1: playersArr){
-                    if(atUser.contains(p1+"")){
+                    if(atUser.contains(Long.parseLong(p1))){
                         // 判断决斗胜负是否已经分出
                         if (!RodeoManager.isDuelOver(CURRENT_SPORTS.get(key))) {
                             return CURRENT_SPORTS.get(key);
@@ -222,7 +222,7 @@ public class RodeoManager {
         List<Rodeo> expRodeo = list.stream().map(l -> {
             String endTime = l.getDay() + " " + l.getEndTime();
             // 17.05
-            LocalDateTime end = LocalDateTime.parse(endTime);
+            LocalDateTime end = LocalDateTime.parse(endTime, Constant.FORMATTER);
             if (end.isBefore(now)) {
                 return l;
             }
@@ -277,7 +277,7 @@ public class RodeoManager {
         CronUtil.schedule(startCronKey, startCronExpression, startTask);
 
         // 结束任务
-        String endCronKey = rodeo.getDay() +Constant.SPILT + rodeo.getEndTime();
+        String endCronKey = rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
         CronUtil.remove(endCronKey);
         RodeoEndTask endTask = new RodeoEndTask(taskKey, rodeo);
         CronUtil.schedule(endCronKey, endCronExpression, endTask);
@@ -287,7 +287,9 @@ public class RodeoManager {
     public static String getCronByDateAndTime(String date, String time) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime dateTime = LocalDateTime.parse(date + " " + time, formatter);
-
+        if(dateTime.isBefore(LocalDateTime.now())){
+            dateTime = LocalDateTime.now().plusSeconds(60L);
+        }
         int seconds = dateTime.getSecond();
         int minutes = dateTime.getMinute();
         int hour = dateTime.getHour();

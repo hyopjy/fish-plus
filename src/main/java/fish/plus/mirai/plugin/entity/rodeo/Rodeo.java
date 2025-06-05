@@ -36,7 +36,6 @@ public class Rodeo implements Serializable {
 
 
     // 配置日期   2024-08-23
-    @Column(name = "_day")
     private String day;
 
     // 时间段  10:15:00

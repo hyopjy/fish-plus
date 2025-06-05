@@ -35,7 +35,7 @@ public class BotPostSendEventListener extends SimpleListenerHost {
         // [轮盘]
         // [决斗]
 
-        if(!(code.startsWith("[轮盘]") || code.startsWith("[决斗]"))){
+        if(!(code.startsWith("\\[轮盘\\]") || code.startsWith("\\[决斗\\]"))){
             return;
         }
         List<Long> atUser = new ArrayList<>();
@@ -44,6 +44,9 @@ public class BotPostSendEventListener extends SimpleListenerHost {
             if (singleMessage instanceof At) {
                 At at = (At) singleMessage;
                 atUser.add(at.getTarget());
+                if(atUser.size() == 2){
+                    break;
+                }
             }
         }
         Rodeo redeo = RodeoManager.getCurrent(event.getTarget().getId(), atUser);
@@ -54,6 +57,8 @@ public class BotPostSendEventListener extends SimpleListenerHost {
         // 如果有 则记录
 
         // [mirai:at:294253294] 😙了一口[mirai:at:952746839] 的【身体】，让对方被冲昏了1分40秒头脑。恭喜[mirai:at:294253294] 获得一分！
+        // [mirai:at:952746839] 😙了一口[mirai:at:1811756096] 的【肩膀🤷‍♀】，让对方被冲昏了3秒头脑。恭喜[mirai:at:952746839] 获得一分！
+        // <target-win> 😙了一口<target-lose> 的【<position>】，让对方被冲昏了<mute-f>头脑。恭喜<target-win> 获得一分！
         RodeoRecordGameInfoDto dto = new RodeoRecordGameInfoDto();
         if (DUEL.equals(redeo.getPlayingMethod())) {
             int totalDuration = 0;

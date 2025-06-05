@@ -19,7 +19,7 @@ public interface Constant {
 
     String SPILT = "-";
 
-    String SPILT2 = "|";
+    String SPILT2 = "\\|";
 
     String MM_SPILT = ",";
 

@@ -25,6 +25,7 @@ public class RodeoOpenTask implements Task {
         if(Objects.isNull(strategy)){
             return;
         }
+        // todo 授权
         strategy.startGame(rodeo);
     }
 }

@@ -34,6 +34,8 @@ dependencies {
 // https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
     implementation( "org.projectlombok:lombok:1.18.24")
+//    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.24'
+    annotationProcessor("org.projectlombok","lombok","1.18.24")
     implementation("cn.hutool:hutool-all:5.8.10")
     implementation("org.apache.commons:commons-lang3:3.8.1")
     implementation("cn.chahuyun:hibernate-plus:1.0.16")
