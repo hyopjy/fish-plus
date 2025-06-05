@@ -1,10 +1,13 @@
 package fish.plus.mirai.plugin;
 
+import cn.hutool.core.collection.CollectionUtil;
 import fish.plus.mirai.plugin.event.BotPostSendEventListener;
 import fish.plus.mirai.plugin.mqtt.MqttClientStart;
+import fish.plus.mirai.plugin.util.HibernateUtil;
 import fish.plus.mirai.plugin.util.Log;
 import kotlin.Lazy;
 import kotlin.LazyKt;
+import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.console.permission.*;
 import net.mamoe.mirai.console.plugin.jvm.JavaPlugin;
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription;
@@ -16,6 +19,8 @@ import net.mamoe.mirai.event.EventChannel;
 import net.mamoe.mirai.event.GlobalEventChannel;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
+
+import java.util.List;
 
 
 /**
@@ -49,12 +54,27 @@ public final class JavaPluginMain extends JavaPlugin {
         Log.info("插件已卸载!");
     }
 
+    public Bot bot;
+
+    public Bot getBotInstance() {
+        if (bot == null) {
+            List<Bot> botList = Bot.getInstances();
+            if (CollectionUtil.isEmpty(botList)) {
+                Log.info("getBotInstance 获取bot为空");
+                return bot;
+            }
+            return botList.get(0);
+        }
+        return bot;
+    }
+
     @Override
     public void onEnable() {
         getLogger().info("日志");
         // 初始化mqtt
-        MqttClientStart.getInstance();
-
+//        MqttClientStart.getInstance();
+        //初始化插件数据库
+        HibernateUtil.init(this);
 
         EventChannel<Event> eventChannel = GlobalEventChannel.INSTANCE.parentScope(this);
         eventChannel.registerListenerHost(new BotPostSendEventListener());
