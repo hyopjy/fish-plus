@@ -31,4 +31,8 @@ public interface RodeoStrategy {
      * @return
      */
     RodeoRecordGameInfoDto analyzeMessage(String message);
+
+    void grantPermission(Rodeo rodeo);
+
+    void cancelPermission(Rodeo rodeo);
 }

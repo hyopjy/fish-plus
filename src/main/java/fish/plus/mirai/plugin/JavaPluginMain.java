@@ -3,6 +3,7 @@ package fish.plus.mirai.plugin;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.cron.CronUtil;
 import fish.plus.mirai.plugin.event.BotPostSendEventListener;
+import fish.plus.mirai.plugin.event.GroupEventListener;
 import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.mqtt.MqttClientStart;
 import fish.plus.mirai.plugin.util.HibernateUtil;
@@ -81,6 +82,7 @@ public final class JavaPluginMain extends JavaPlugin {
 
         EventChannel<Event> eventChannel = GlobalEventChannel.INSTANCE.parentScope(this);
         eventChannel.registerListenerHost(new BotPostSendEventListener());
+        eventChannel.registerListenerHost(new GroupEventListener());
 //        eventChannel.subscribeAlways(GroupMessageEvent.class, g -> {
 //            //监听群消息
 //            getLogger().info(g.getMessage().contentToString());
@@ -94,6 +96,9 @@ public final class JavaPluginMain extends JavaPlugin {
 //        });
 
         myCustomPermission.getValue(); // 注册权限
+//        GlobalEventChannel.INSTANCE.subscribeAlways(BotGroupPermissionChangeEvent.class, event -> {
+//            System.out.println("权限变更：" + event.getPermissionId() + " 状态：" + event.getType());
+//        });
 
 //        MqttClientStart mqttClientUtil = MqttClientStart.getInstance();
 //        mqttClientUtil.subscribeTopic("test/topic");

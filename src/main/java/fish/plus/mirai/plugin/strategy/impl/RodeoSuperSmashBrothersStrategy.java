@@ -5,6 +5,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import fish.plus.mirai.plugin.constants.Constant;
+import fish.plus.mirai.plugin.manager.PermissionManager;
 import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.obj.dto.RodeoEndGameInfoDto;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
@@ -70,7 +71,6 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
         group.sendMessage(m);
 
-        // todo 开始决斗权限
     }
 
     @Override
@@ -82,7 +82,6 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         loseRodeoRecord.setForbiddenSpeech(dto.getForbiddenSpeech());
         loseRodeoRecord.setTurns(null);
         loseRodeoRecord.setRodeoDesc(dto.getRodeoDesc());
-        loseRodeoRecord.saveOrUpdate();
         loseRodeoRecord.saveOrUpdate();
 
     }
@@ -138,13 +137,28 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         });
         group.sendMessage(new PlainText(message));
 
-        // todo 关闭决斗权限
-
-        RodeoManager.removeExpRodeoList();
+        cancelPermission(rodeo);
+        RodeoManager.removeEndRodeo(rodeo);
     }
 
     @Override
     public RodeoRecordGameInfoDto analyzeMessage(String message) {
         return null;
+    }
+
+    @Override
+    public void grantPermission(Rodeo rodeo) {
+        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        for(String player: players){
+            PermissionManager.grantDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
+        }
+    }
+
+    @Override
+    public void cancelPermission(Rodeo rodeo) {
+        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        for(String player: players){
+            PermissionManager.revokeDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
+        }
     }
 }

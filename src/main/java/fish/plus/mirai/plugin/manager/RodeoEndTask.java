@@ -28,6 +28,7 @@ public class RodeoEndTask implements Task {
             return;
         }
         // todo 取消权限
+        strategy.cancelPermission(rodeo);
         strategy.endGame(rodeo);
     }
 }

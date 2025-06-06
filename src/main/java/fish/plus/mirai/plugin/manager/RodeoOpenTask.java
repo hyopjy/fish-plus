@@ -26,6 +26,7 @@ public class RodeoOpenTask implements Task {
             return;
         }
         // todo 授权
+        strategy.grantPermission(rodeo);
         strategy.startGame(rodeo);
     }
 }

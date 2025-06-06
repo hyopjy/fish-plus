@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import fish.plus.mirai.plugin.constants.Constant;
 import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.entity.rodeo.RodeoRecord;
+import fish.plus.mirai.plugin.manager.PermissionManager;
 import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.manager.RodeoRecordManager;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
@@ -182,7 +183,7 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         loseTimeSum = loseTimeSum  + loseLoseList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
 
         // 决斗存入赢+输的场次
-        String messageFormat = "\r\n %s结束，恭喜胜者%s以[%s:%s]把对手%s鸡哔！🔫\r\n %s共被禁言%s \r\n %s共被禁言%s \r\n 菜！就！多！练！ ";
+        String messageFormat = "\r\n %s结束，恭喜胜者%s以[%s:%s]把对手%s鸡哔！🔫\r\n %s共被禁言%s 秒\r\n %s共被禁言%s 秒\r\n 菜！就！多！练！ ";
 
 
         String message = String.format(messageFormat, rodeo.getVenue(), new At(winner).getDisplay(group),
@@ -190,13 +191,29 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
                 winnerTimeSum, new At(lose).getDisplay(group), loseTimeSum);
         group.sendMessage(new PlainText(message));
 
-        // todo 关闭决斗权限
+        cancelPermission(rodeo);
         RodeoManager.removeEndRodeo(rodeo);
     }
 
     @Override
     public RodeoRecordGameInfoDto analyzeMessage(String message) {
         return null;
+    }
+
+    @Override
+    public void grantPermission(Rodeo rodeo) {
+        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        for(String player: players){
+            PermissionManager.grantDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
+        }
+    }
+
+    @Override
+    public void cancelPermission(Rodeo rodeo) {
+        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        for(String player: players){
+            PermissionManager.revokeDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
+        }
     }
 
 }
