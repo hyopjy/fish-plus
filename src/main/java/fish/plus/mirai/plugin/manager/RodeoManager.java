@@ -141,6 +141,7 @@ public class RodeoManager {
         if(!RodeoFactory.DUEL.equals(rodeo.getPlayingMethod())){
             return false;
         }
+
         Long id = rodeo.getId();
         List<RodeoRecord> records = RodeoRecordManager.getRecordsByRodeoId(id);
         if(CollectionUtil.isEmpty(records)){
@@ -185,9 +186,13 @@ public class RodeoManager {
             loseOptional.ifPresent(rodeoRecord -> losePlayers.add(rodeoRecord.getPlayer()));
         });
         // 3 0
+        // 每一局赢的人
+        Map<String, List<String>> winnerMap = winnerPlayers.stream()
+                .collect(Collectors.groupingBy(s -> s));
         // 记录的是赢的次数
-        int roundWinCount = (rodeo.getRound() / 2) + 1 ;
-        return winnerPlayers.size() == roundWinCount;
+        int roundWinCount = (rodeo.getRound() / 2) + 1;
+        return winnerMap.entrySet().stream()
+                .anyMatch(entry -> entry.getValue().size() >= roundWinCount);
     }
 
     //  判断存在的数据 时间是否有交叉
@@ -234,6 +239,14 @@ public class RodeoManager {
 
         records.forEach(RodeoRecord::remove);
         expRodeo.forEach(Rodeo::remove);
+    }
+
+    public static void removeEndRodeo(Rodeo rodeo) {
+        List<Long> rodeoIds = Collections.singletonList(rodeo.getId());
+        List<RodeoRecord> records = RodeoRecordManager.getRodeoRecordByRodeoIds(rodeoIds);
+
+        records.forEach(RodeoRecord::remove);
+        rodeo.remove();
     }
 
 

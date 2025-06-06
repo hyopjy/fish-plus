@@ -22,6 +22,17 @@ import java.util.stream.Collectors;
  * 轮盘
  */
 public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
+
+    private static class Holder {
+        static final RodeoRouletteStrategy INSTANCE = new RodeoRouletteStrategy();
+    }
+
+    private RodeoRouletteStrategy() {} // 私有构造函数
+
+    public static RodeoRouletteStrategy getInstance() {
+        return Holder.INSTANCE;
+    }
+
     @Override
     public void startGame(Rodeo rodeo) {
         Group group = getBotGroup(rodeo.getGroupId());

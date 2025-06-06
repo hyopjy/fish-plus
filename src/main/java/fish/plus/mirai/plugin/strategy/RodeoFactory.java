@@ -10,15 +10,15 @@ public class RodeoFactory {
     public static final String ROULETTE = "轮盘";
     public static final String SUPER_SMASH_BROTHERS = "大乱斗";
 
-    public static RodeoStrategy createRodeoDuelStrategy(String playingMethod){
-        if(DUEL.equals(playingMethod)){
-            return new RodeoDuelStrategy();
+    public static RodeoStrategy createRodeoDuelStrategy(String playingMethod) {
+        if (DUEL.equals(playingMethod)) {
+            return RodeoDuelStrategy.getInstance();
         }
-        if(ROULETTE.equals(playingMethod)) {
-            return new RodeoRouletteStrategy();
+        if (ROULETTE.equals(playingMethod)) {
+            return RodeoRouletteStrategy.getInstance();
         }
-        if(SUPER_SMASH_BROTHERS.equals(playingMethod)) {
-            return new RodeoSuperSmashBrothersStrategy();
+        if (SUPER_SMASH_BROTHERS.equals(playingMethod)) {
+            return RodeoSuperSmashBrothersStrategy.getInstance();
         }
         return null;
     }

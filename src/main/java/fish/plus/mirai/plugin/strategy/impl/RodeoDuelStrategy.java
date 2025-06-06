@@ -20,6 +20,17 @@ import java.util.stream.Collectors;
  * 决斗
  */
 public class RodeoDuelStrategy extends RodeoAbstractStrategy {
+
+    private static class Holder {
+        static final RodeoDuelStrategy INSTANCE = new RodeoDuelStrategy();
+    }
+
+    private RodeoDuelStrategy() {} // 私有构造函数
+
+    public static RodeoDuelStrategy getInstance() {
+        return Holder.INSTANCE;
+    }
+
     @Override
     public void startGame(Rodeo rodeo) {
 //        分配决斗[双方][规定时间段]内的比赛[局数]（按局数给权限）
@@ -88,7 +99,6 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         loseRodeoRecord.setTurns(currentRound);
         loseRodeoRecord.setRodeoDesc(dto.getRodeoDesc());
         loseRodeoRecord.saveOrUpdate();
-
     }
 
     @Override
@@ -126,28 +136,62 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         Map<Integer, List<RodeoRecord>> recordsByTurns = records.stream()
                 .collect(Collectors.groupingBy(RodeoRecord::getTurns));
         recordsByTurns.forEach((turns, recordList) -> {
-            Optional<RodeoRecord> winnerOptional = recordList.stream().filter(r-> Objects.isNull(r.getForbiddenSpeech()) || r.getForbiddenSpeech().equals(0)).findAny();
+            Optional<RodeoRecord> winnerOptional = recordList.stream().filter(r-> Objects.isNull(r.getForbiddenSpeech())
+                    || r.getForbiddenSpeech().equals(0)).findAny();
             winnerOptional.ifPresent(winnerPlayers::add);
 
             Optional<RodeoRecord> loseOptional = recordList.stream().filter(r->  r.getForbiddenSpeech() > 0).findAny();
             loseOptional.ifPresent(losePlayers::add);
         });
 
+        long winner;
+        long lose;
+
+        int winnerScore;
+        int loseScore;
+        long winnerTimeSum = 0L;
+        long loseTimeSum = 0L;
+        Map<String, List<RodeoRecord>> winnerMap = winnerPlayers.stream()
+                .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
+
+
+        List<RodeoRecord> p1RecordWinList = Optional.ofNullable(winnerMap.get(""+ player1)).orElse(new ArrayList<>());
+        List<RodeoRecord> p2RecordWinList = Optional.ofNullable(winnerMap.get(""+ player2)).orElse(new ArrayList<>());
+        if(p1RecordWinList.size() > p2RecordWinList.size()){
+            winner = player1;
+            lose = player2;
+            winnerTimeSum = winnerTimeSum + p1RecordWinList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
+            loseTimeSum = loseTimeSum + p2RecordWinList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
+            winnerScore = p1RecordWinList.size();
+            loseScore = p2RecordWinList.size();
+        }else {
+            winner = player2;
+            lose = player1;
+            winnerTimeSum = winnerTimeSum + p2RecordWinList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
+            loseTimeSum = loseTimeSum  + p1RecordWinList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
+            winnerScore = p2RecordWinList.size();
+            loseScore = p1RecordWinList.size();
+        }
+
+        Map<String, List<RodeoRecord>> loserMap = losePlayers.stream()
+                .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
+        List<RodeoRecord> winerLoseList = Optional.ofNullable(loserMap.get(""+ winner)).orElse(new ArrayList<>());
+        List<RodeoRecord> loseLoseList = Optional.ofNullable(loserMap.get(""+ lose)).orElse(new ArrayList<>());
+
+        winnerTimeSum = winnerTimeSum + winerLoseList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
+        loseTimeSum = loseTimeSum  + loseLoseList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
 
         // 决斗存入赢+输的场次
         String messageFormat = "\r\n %s结束，恭喜胜者%s以[%s:%s]把对手%s鸡哔！🔫\r\n %s共被禁言%s \r\n %s共被禁言%s \r\n 菜！就！多！练！ ";
-        Long winner = Long.parseLong(winnerPlayers.get(0).getPlayer());
-        Long lose = Long.parseLong(losePlayers.get(0).getPlayer());
-        Long winnerTimeSum = winnerPlayers.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
-        Long loseTimeSum = winnerPlayers.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
+
+
         String message = String.format(messageFormat, rodeo.getVenue(), new At(winner).getDisplay(group),
-                winnerPlayers.size(), losePlayers.size(), new At(lose).getDisplay(group), new At(winner).getDisplay(group),
+                winnerScore, loseScore, new At(lose).getDisplay(group), new At(winner).getDisplay(group),
                 winnerTimeSum, new At(lose).getDisplay(group), loseTimeSum);
         group.sendMessage(new PlainText(message));
 
         // todo 关闭决斗权限
-
-        RodeoManager.removeExpRodeoList();
+        RodeoManager.removeEndRodeo(rodeo);
     }
 
     @Override

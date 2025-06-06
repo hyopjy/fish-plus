@@ -31,6 +31,17 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 //    新的🏟[比赛场次名]正式开战！比赛时长[10分钟]，参赛选手有：@A@B@C@D
 //    大乱斗比赛正式打响！🔫[10分钟]的比赛，谁将笑傲鱼塘🤺，谁又将菜然神伤🥬？
 //            】
+
+    private static class Holder {
+        static final RodeoSuperSmashBrothersStrategy INSTANCE = new RodeoSuperSmashBrothersStrategy();
+    }
+
+    private RodeoSuperSmashBrothersStrategy() {} // 私有构造函数
+
+    public static RodeoSuperSmashBrothersStrategy getInstance() {
+        return RodeoSuperSmashBrothersStrategy.Holder.INSTANCE;
+    }
+
     @Override
     public void startGame(Rodeo rodeo) {
         Group group = getBotGroup(rodeo.getGroupId());
