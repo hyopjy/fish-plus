@@ -4,11 +4,13 @@ import cn.chahuyun.hibernateplus.HibernateFactory;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.cron.CronUtil;
+import fish.plus.mirai.plugin.JavaPluginMain;
 import fish.plus.mirai.plugin.constants.Constant;
 import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.entity.rodeo.RodeoRecord;
 import fish.plus.mirai.plugin.strategy.RodeoFactory;
 import lombok.extern.slf4j.Slf4j;
+import net.mamoe.mirai.contact.Group;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -216,6 +218,7 @@ public class RodeoManager {
     public static void init(){
         // 删除结束时间小于当前时间的数据
         removeExpRodeoList();
+        CURRENT_SPORTS.clear();
         // 启动有效的任务
         List<Rodeo> list = getRodeoList();
         list.forEach(RodeoManager::runTask);
@@ -294,6 +297,14 @@ public class RodeoManager {
         CronUtil.remove(endCronKey);
         RodeoEndTask endTask = new RodeoEndTask(taskKey, rodeo);
         CronUtil.schedule(endCronKey, endCronExpression, endTask);
+
+
+        if(Objects.nonNull(JavaPluginMain.INSTANCE.getBotInstance())){
+            Group group = JavaPluginMain.INSTANCE.getBotInstance().getGroup(rodeo.getGroupId());
+            if(Objects.nonNull(group)){
+                group.sendMessage("比赛将在一分钟后开始⚡️⚡️");
+            }
+        }
 
     }
 

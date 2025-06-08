@@ -67,13 +67,14 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
     @Override
     public void record(Rodeo rodeo, RodeoRecordGameInfoDto dto) {
         // 存入输家
-        RodeoRecord loseRodeoRecord = new RodeoRecord();
-        loseRodeoRecord.setRodeoId(rodeo.getId());
-        loseRodeoRecord.setPlayer(dto.getLoser());
-        loseRodeoRecord.setForbiddenSpeech(dto.getForbiddenSpeech());
-        loseRodeoRecord.setTurns(null);
-        loseRodeoRecord.setRodeoDesc(dto.getRodeoDesc());
-        loseRodeoRecord.saveOrUpdate();
+        RodeoRecord loserodeorecord = new RodeoRecord();
+        loserodeorecord.setRodeoId(rodeo.getId());
+        loserodeorecord.setPlayer(dto.getLoser());
+        loserodeorecord.setForbiddenSpeech(dto.getForbiddenSpeech());
+        loserodeorecord.setTurns(null);
+        loserodeorecord.setRodeoDesc(dto.getRodeoDesc());
+        loserodeorecord.setWinFlag(0);
+        loserodeorecord.saveOrUpdate();
     }
 
     @Override

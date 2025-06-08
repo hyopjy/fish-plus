@@ -76,13 +76,25 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
     @Override
     public void record(Rodeo rodeo, RodeoRecordGameInfoDto dto) {
         // 存入输家
-        RodeoRecord loseRodeoRecord = new RodeoRecord();
-        loseRodeoRecord.setRodeoId(rodeo.getId());
-        loseRodeoRecord.setPlayer(dto.getLoser());
-        loseRodeoRecord.setForbiddenSpeech(dto.getForbiddenSpeech());
-        loseRodeoRecord.setTurns(null);
-        loseRodeoRecord.setRodeoDesc(dto.getRodeoDesc());
-        loseRodeoRecord.saveOrUpdate();
+        // 存入输家
+        RodeoRecord loserodeorecord = new RodeoRecord();
+        loserodeorecord.setRodeoId(rodeo.getId());
+        loserodeorecord.setPlayer(dto.getLoser());
+        loserodeorecord.setForbiddenSpeech(dto.getForbiddenSpeech());
+        loserodeorecord.setTurns(null);
+        loserodeorecord.setRodeoDesc(dto.getRodeoDesc());
+        loserodeorecord.setWinFlag(0);
+        loserodeorecord.saveOrUpdate();
+
+
+        RodeoRecord winnerRodeoRecord = new RodeoRecord();
+        winnerRodeoRecord.setRodeoId(rodeo.getId());
+        winnerRodeoRecord.setPlayer(dto.getWinner());
+        winnerRodeoRecord.setForbiddenSpeech(0);
+        winnerRodeoRecord.setTurns(null);
+        winnerRodeoRecord.setRodeoDesc(dto.getRodeoDesc());
+        loserodeorecord.setWinFlag(1);
+        winnerRodeoRecord.saveOrUpdate();
 
     }
 
@@ -120,7 +132,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
             return dtoMap.containsKey(player) ? new ArrayList<>(dtoMap.keySet()).indexOf(player) : Integer.MAX_VALUE;
         }));
 
-        StringBuilder message = new StringBuilder("[比赛场次名]结束，得分表如下：\r\n");
+        StringBuilder message = new StringBuilder("["+rodeo.getVenue()+"]结束，得分表如下：\r\n");
         playerList.forEach(player -> {
             RodeoEndGameInfoDto dto = dtoMap.get(player);
             String playerName = new At(Long.parseLong(player)).getDisplay(group);

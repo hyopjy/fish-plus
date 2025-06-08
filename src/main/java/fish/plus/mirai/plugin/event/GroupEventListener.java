@@ -22,9 +22,9 @@ public class GroupEventListener extends SimpleListenerHost {
 //
 //        }
         String code = event.getMessage().serializeToMiraiCode();
-        if ("开始决斗".equals(code)) {
+        if ("开始比赛".equals(code)) {
             RodeoManager.init();
-            subject.sendMessage("等待决斗开始⚡️⚡️");
+//            subject.sendMessage("比赛将在一分钟后开始⚡️⚡️");
         }
 
 

@@ -29,7 +29,7 @@ public class BotPostSendEventListener extends SimpleListenerHost {
      *
      * @param event
      */
-    @EventHandler()
+    @EventHandler
     public void onMessage(@NotNull MessagePostSendEvent event) {
 //            MqttClientStart.getInstance().subscribeTopic("test/topic");
 //            MqttClientStart.getInstance().publishMessage("test/topic", event.getMessage().contentToString());
@@ -112,16 +112,30 @@ public class BotPostSendEventListener extends SimpleListenerHost {
             dto.setForbiddenSpeech(totalDuration); // 根据需要设置
             dto.setRodeoDesc(code);
         }else{
+            // 提取输家信息
+            // 提取时长
+            String loser = "";
+            String timeStr = "";
+            String durationStr ="";
+            if (messageList.size() == 6) {
+                String winner = messageList.get(4);
+                // 大乱斗记入输的 和赢家
+                loser = messageList.get(2);
+                timeStr = messageList.get(3);
+                durationStr = timeStr.replaceAll(".*?让对方被冲昏了", "").split("头脑")[0];
+
+                dto.setWinner(winner);
+            }
+            if(messageList.size() == 2){
+                loser = messageList.get(0);
+                timeStr = messageList.get(1);
+                durationStr = timeStr.replaceAll(".*?被冲昏了", "").split("头脑")[0];
+            }
             // 比赛记录处理
             // "[mirai:at:294253294] 开了一枪🔫，枪响了，被冲昏了4分9秒头脑，并爽快地输掉了这局比赛。"
             // <target-win> 😙了一口<target-lose> 的【<position>】，让对方被冲昏了<mute-f>头脑。恭喜<target-win> 获得一分！
-            String loser = messageList.get(0);
-            int totalDuration = 0;
-            // 提取输家信息
 
-            // 提取时长
-            String timeStr = messageList.get(1);
-            String durationStr = timeStr.replaceAll(".*?被冲昏了", "").split("头脑")[0];
+            int totalDuration = 0;
             String[] timeParts = durationStr.split("分|秒");
             if(durationStr.contains("分")){
                 int minutes = Integer.parseInt(timeParts[0]);

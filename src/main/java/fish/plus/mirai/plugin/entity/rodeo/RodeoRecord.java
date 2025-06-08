@@ -42,6 +42,8 @@ public class RodeoRecord {
     @Column(columnDefinition = "text")
     private String rodeoDesc;
 
+    private int winFlag;
+
     public boolean saveOrUpdate() {
         try {
             HibernateFactory.merge(this);

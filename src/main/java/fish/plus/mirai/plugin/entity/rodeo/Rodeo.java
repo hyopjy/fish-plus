@@ -52,7 +52,6 @@ public class Rodeo implements Serializable {
     // 局数
     private int round;
 
-
     public Rodeo() {
     }
 

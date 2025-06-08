@@ -78,7 +78,7 @@ public final class JavaPluginMain extends JavaPlugin {
         CronUtil.start();
         //初始化插件数据库
         HibernateUtil.init(this);
-        RodeoManager.init();
+
 
         EventChannel<Event> eventChannel = GlobalEventChannel.INSTANCE.parentScope(this);
         eventChannel.registerListenerHost(new BotPostSendEventListener());
@@ -103,6 +103,8 @@ public final class JavaPluginMain extends JavaPlugin {
 //        MqttClientStart mqttClientUtil = MqttClientStart.getInstance();
 //        mqttClientUtil.subscribeTopic("test/topic");
 //        mqttClientUtil.publishMessage("test/topic", "Hello MQTT!");
+
+        RodeoManager.init();
     }
 
     // region mirai-console 权限系统示例
