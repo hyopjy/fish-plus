@@ -84,50 +84,61 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
             return;
         }
         Long rodeoId = rodeo.getId();
-        // 所有输的记录
+        // 获取当前赛事的所有记录
         List<RodeoRecord> records = RodeoRecordManager.getRecordsByRodeoId(rodeoId);
 
-
-        // Create the map grouping records by player
+        // 按玩家分组记录
         Map<String, List<RodeoRecord>> sumByPlayer = records.stream()
                 .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
-        List<RodeoEndGameInfoDto> recordEndGameInfoDtos = new ArrayList<RodeoEndGameInfoDto>();
-        sumByPlayer.forEach((player, record)->{
+
+        // 创建用于存储结果的 DTO 列表
+        List<RodeoEndGameInfoDto> recordEndGameInfoDtos = new ArrayList<>();
+
+        // 遍历每个玩家的记录并计算总分和禁言时长
+        sumByPlayer.forEach((player, record) -> {
             RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
             dto.setPlayer(player);
-            dto.setScore(record.size());
-            dto.setForbiddenSpeech(record.stream().filter(Objects::nonNull).mapToInt(RodeoRecord::getForbiddenSpeech).sum());
+            dto.setScore(record.size()); // 总局数作为分数
+            dto.setForbiddenSpeech(record.stream()
+                    .filter(Objects::nonNull)
+                    .mapToInt(RodeoRecord::getForbiddenSpeech)
+                    .sum()); // 累加禁言时长
             recordEndGameInfoDtos.add(dto);
         });
+
         // 获取所有参赛者
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
-        Map<String, RodeoEndGameInfoDto> dtoMap = recordEndGameInfoDtos.stream()
-                .collect(Collectors.toMap(RodeoEndGameInfoDto::getPlayer, dto -> dto));
-        // 将 players 数组转换为列表
-        List<String> playerList = Arrays.asList(players);
+        List<String> allPlayers = Arrays.asList(players);
 
-        // 按照 dtoMap 中的键排序
-        playerList.sort(Comparator.comparingInt(player -> {
-            // 若 dtoMap 中存在该 player，则返回其索引，否则返回最大值以确保在末尾
-            return dtoMap.containsKey(player) ? new ArrayList<>(dtoMap.keySet()).indexOf(player) : Integer.MAX_VALUE;
-        }));
-
-        StringBuilder message = new StringBuilder("[比赛场次名]结束，得分表如下：\r\n");
-        playerList.forEach(player -> {
-            RodeoEndGameInfoDto dto = dtoMap.get(player);
-            String playerName = new At(Long.parseLong(player)).getDisplay(group);
-            int score = 0;
-            if (Objects.nonNull(dto)) {
-                score = dto.getScore();
+        // 将未参赛的玩家添加到 DTO 列表中，并设置默认值
+        allPlayers.forEach(player -> {
+            if (!sumByPlayer.containsKey(player)) {
+                RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
+                dto.setPlayer(player);
+                dto.setScore(0); // 未参赛，分数为 0
+                dto.setForbiddenSpeech(0); // 未参赛，禁言时长为 0
+                recordEndGameInfoDtos.add(dto);
             }
-            message.append(playerName).append("-").append(score);
         });
 
-        dtoMap.forEach((player, dto) -> {
-            String playerName = new At(Long.parseLong(player)).getDisplay(group);
-            message.append(playerName).append("共被禁言[").append(dto.getForbiddenSpeech()+"]");
+        // 按禁言时长倒序排序
+        recordEndGameInfoDtos.sort(Comparator.comparingInt(RodeoEndGameInfoDto::getForbiddenSpeech).reversed());
+
+        // 构建消息内容
+        StringBuilder message = new StringBuilder("[" + rodeo.getVenue() + "]结束，按禁言时长倒序排名如下：\r\n");
+
+        recordEndGameInfoDtos.forEach(dto -> {
+            String playerName = new At(Long.parseLong(dto.getPlayer())).getDisplay(group);
+            message.append(playerName)
+                    .append(" - 禁言时长: ")
+                    .append(dto.getForbiddenSpeech())
+                    .append("秒 - 得分: ")
+                    .append(dto.getScore())
+                    .append("\r\n");
         });
-        group.sendMessage(new PlainText(message));
+
+        // 发送消息
+        group.sendMessage(new PlainText(message.toString()));
 
         // todo 关闭轮盘
         cancelPermission(rodeo);

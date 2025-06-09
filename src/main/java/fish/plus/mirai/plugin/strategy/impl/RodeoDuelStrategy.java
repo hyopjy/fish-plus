@@ -120,77 +120,62 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         }
 
         Long rodeoId = rodeo.getId();
+        // 获取参赛玩家列表
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
         Long player1 = Long.parseLong(players[0]);
         Long player2 = Long.parseLong(players[1]);
 
+// 获取当前赛事的所有记录
         List<RodeoRecord> records = RodeoRecordManager.getRecordsByRodeoId(rodeoId);
-        if(CollectionUtil.isEmpty(records)){
+
+// 如果没有比赛记录，则直接返回未进行比赛的消息
+        if (CollectionUtil.isEmpty(records)) {
             String messageFormat = "\r\n %s,%s,%s未进行任何比赛 \r\n";
             String message = String.format(messageFormat, rodeo.getVenue(),
                     new At(player1).getDisplay(group), new At(player2).getDisplay(group));
             group.sendMessage(new PlainText(message));
-            return ;
+            return;
         }
 
-        List<RodeoRecord> winnerPlayers = new ArrayList<RodeoRecord>();
-        List<RodeoRecord> losePlayers = new ArrayList<RodeoRecord>();
-        // 局数
-        Map<Integer, List<RodeoRecord>> recordsByTurns = records.stream()
-                .collect(Collectors.groupingBy(RodeoRecord::getTurns));
-        recordsByTurns.forEach((turns, recordList) -> {
-            Optional<RodeoRecord> winnerOptional = recordList.stream().filter(r-> Objects.isNull(r.getForbiddenSpeech())
-                    || r.getForbiddenSpeech().equals(0)).findAny();
-            winnerOptional.ifPresent(winnerPlayers::add);
+        // 初始化胜者和败者统计信息
+        Map<Long, Integer> winCountMap = new HashMap<>(); // 胜场次数统计
+        Map<Long, Long> forbiddenSpeechMap = new HashMap<>(); // 禁言时长统计
 
-            Optional<RodeoRecord> loseOptional = recordList.stream().filter(r->  r.getForbiddenSpeech() > 0).findAny();
-            loseOptional.ifPresent(losePlayers::add);
-        });
-
-        long winner;
-        long lose;
-
-        int winnerScore;
-        int loseScore;
-        long winnerTimeSum = 0L;
-        long loseTimeSum = 0L;
-        Map<String, List<RodeoRecord>> winnerMap = winnerPlayers.stream()
-                .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
-
-
-        List<RodeoRecord> p1RecordWinList = Optional.ofNullable(winnerMap.get(""+ player1)).orElse(new ArrayList<>());
-        List<RodeoRecord> p2RecordWinList = Optional.ofNullable(winnerMap.get(""+ player2)).orElse(new ArrayList<>());
-        if(p1RecordWinList.size() > p2RecordWinList.size()){
-            winner = player1;
-            lose = player2;
-            winnerTimeSum = winnerTimeSum + p1RecordWinList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
-            loseTimeSum = loseTimeSum + p2RecordWinList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
-            winnerScore = p1RecordWinList.size();
-            loseScore = p2RecordWinList.size();
-        }else {
-            winner = player2;
-            lose = player1;
-            winnerTimeSum = winnerTimeSum + p2RecordWinList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
-            loseTimeSum = loseTimeSum  + p1RecordWinList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
-            winnerScore = p2RecordWinList.size();
-            loseScore = p1RecordWinList.size();
+        // 遍历所有比赛记录，统计胜场次数和禁言时长
+        for (RodeoRecord record : records) {
+            Long player = Long.parseLong(record.getPlayer());
+            if (record.getWinFlag() == 1) { // 如果该玩家获胜
+                winCountMap.put(player, winCountMap.getOrDefault(player, 0) + 1);
+            }
+            // 统计禁言时长
+            forbiddenSpeechMap.put(player, forbiddenSpeechMap.getOrDefault(player, 0L) +
+                    Optional.ofNullable(record.getForbiddenSpeech()).orElse(0));
         }
 
-        Map<String, List<RodeoRecord>> loserMap = losePlayers.stream()
-                .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
-        List<RodeoRecord> winerLoseList = Optional.ofNullable(loserMap.get(""+ winner)).orElse(new ArrayList<>());
-        List<RodeoRecord> loseLoseList = Optional.ofNullable(loserMap.get(""+ lose)).orElse(new ArrayList<>());
+        // 获取两位玩家的胜场次数和禁言时长
+        int p1WinCount = winCountMap.getOrDefault(player1, 0);
+        int p2WinCount = winCountMap.getOrDefault(player2, 0);
+        long p1ForbiddenTime = forbiddenSpeechMap.getOrDefault(player1, 0L);
+        long p2ForbiddenTime = forbiddenSpeechMap.getOrDefault(player2, 0L);
 
-        winnerTimeSum = winnerTimeSum + winerLoseList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
-        loseTimeSum = loseTimeSum  + loseLoseList.stream().mapToLong(obj -> Optional.ofNullable(obj.getForbiddenSpeech()).orElse(0)).sum();
+        // 判断胜者
+        Long winner = p1WinCount > p2WinCount ? player1 : player2;
+        Long loser = p1WinCount > p2WinCount ? player2 : player1;
 
-        // 决斗存入赢+输的场次
-        String messageFormat = "\r\n %s结束，恭喜胜者%s以[%s:%s]把对手%s鸡哔！🔫\r\n %s共被禁言%s 秒\r\n %s共被禁言%s 秒\r\n 菜！就！多！练！ ";
+        // 构建输出消息
+        String messageFormat = "\r\n %s结束，恭喜胜者%s以[%d:%d]把对手%s鸡哔！🔫\r\n" +
+                "%s共被禁言%d 秒\r\n" +
+                "%s共被禁言%d 秒\r\n" +
+                "菜！就！多！练！ ";
+        String message = String.format(messageFormat,
+                rodeo.getVenue(),
+                new At(winner).getDisplay(group),
+                p1WinCount, p2WinCount,
+                new At(loser).getDisplay(group),
+                new At(player1).getDisplay(group), p1ForbiddenTime,
+                new At(player2).getDisplay(group), p2ForbiddenTime);
 
-
-        String message = String.format(messageFormat, rodeo.getVenue(), new At(winner).getDisplay(group),
-                winnerScore, loseScore, new At(lose).getDisplay(group), new At(winner).getDisplay(group),
-                winnerTimeSum, new At(lose).getDisplay(group), loseTimeSum);
+        // 发送消息
         group.sendMessage(new PlainText(message));
 
         cancelPermission(rodeo);
