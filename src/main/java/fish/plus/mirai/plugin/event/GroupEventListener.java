@@ -1,6 +1,8 @@
 package fish.plus.mirai.plugin.event;
 
 import fish.plus.mirai.plugin.manager.RodeoManager;
+import fish.plus.mirai.plugin.strategy.RodeoFactory;
+import fish.plus.mirai.plugin.strategy.RodeoStrategy;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.event.EventHandler;

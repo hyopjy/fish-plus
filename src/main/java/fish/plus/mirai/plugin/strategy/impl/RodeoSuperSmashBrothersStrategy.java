@@ -93,7 +93,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         winnerRodeoRecord.setForbiddenSpeech(0);
         winnerRodeoRecord.setTurns(null);
         winnerRodeoRecord.setRodeoDesc(dto.getRodeoDesc());
-        loserodeorecord.setWinFlag(1);
+        winnerRodeoRecord.setWinFlag(1);
         winnerRodeoRecord.saveOrUpdate();
 
     }
@@ -105,49 +105,75 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
             return;
         }
         Long rodeoId = rodeo.getId();
-        // 所有输的记录
+        // 获取当前赛事的所有记录
         List<RodeoRecord> records = RodeoRecordManager.getRecordsByRodeoId(rodeoId);
 
-        // Create the map grouping records by player
-        Map<String, List<RodeoRecord>> sumByPlayer = records.stream()
+        // 按玩家分组记录
+        Map<String, List<RodeoRecord>> recordsByPlayer = records.stream()
                 .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
-        List<RodeoEndGameInfoDto> recordEndGameInfoDtos = new ArrayList<RodeoEndGameInfoDto>();
-        sumByPlayer.forEach((player, record)->{
+
+        // 获取所有参赛者列表
+        String[] playersArray = rodeo.getPlayers().split(Constant.MM_SPILT);
+        List<String> allPlayers = Arrays.asList(playersArray);
+
+        List<RodeoEndGameInfoDto> dtos = new ArrayList<>();
+
+        // 遍历所有参赛者生成统计数据（包含无记录的玩家）
+        allPlayers.forEach(player -> {
+            List<RodeoRecord> playerRecords = recordsByPlayer.getOrDefault(player, Collections.emptyList());
+
             RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
             dto.setPlayer(player);
-            dto.setScore(record.size());
-            dto.setForbiddenSpeech(record.stream().filter(Objects::nonNull).mapToInt(RodeoRecord::getForbiddenSpeech).sum());
-            recordEndGameInfoDtos.add(dto);
-        });
-        // 获取所有参赛者
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
-        Map<String, RodeoEndGameInfoDto> dtoMap = recordEndGameInfoDtos.stream()
-                .collect(Collectors.toMap(RodeoEndGameInfoDto::getPlayer, dto -> dto));
-        // 将 players 数组转换为列表
-        List<String> playerList = Arrays.asList(players);
 
-        // 按照 dtoMap 中的键排序
-        playerList.sort(Comparator.comparingInt(player -> {
-            // 若 dtoMap 中存在该 player，则返回其索引，否则返回最大值以确保在末尾
-            return dtoMap.containsKey(player) ? new ArrayList<>(dtoMap.keySet()).indexOf(player) : Integer.MAX_VALUE;
-        }));
+            // 计算获胜次数（只统计winFlag=1的记录）
+            int winCount = (int) playerRecords.stream()
+                    .filter(r -> r.getWinFlag() == 1)
+                    .count();
+            dto.setScore(winCount);
 
-        StringBuilder message = new StringBuilder("["+rodeo.getVenue()+"]结束，得分表如下：\r\n");
-        playerList.forEach(player -> {
-            RodeoEndGameInfoDto dto = dtoMap.get(player);
-            String playerName = new At(Long.parseLong(player)).getDisplay(group);
-            int score = 0;
-            if (Objects.nonNull(dto)) {
-                score = dto.getScore();
-            }
-            message.append(playerName).append("-").append(score);
+            // 计算总禁言时长
+            int totalForbidden = playerRecords.stream()
+                    .mapToInt(RodeoRecord::getForbiddenSpeech)
+                    .sum();
+            dto.setForbiddenSpeech(totalForbidden);
+
+            dtos.add(dto);
         });
 
-        dtoMap.forEach((player, dto) -> {
-            String playerName = new At(Long.parseLong(player)).getDisplay(group);
-            message.append(playerName).append("共被禁言[").append(dto.getForbiddenSpeech()+"]");
-        });
-        group.sendMessage(new PlainText(message));
+        // 构建排行榜（按分数降序）
+        List<RodeoEndGameInfoDto> scoreRanking = dtos.stream()
+                .sorted(Comparator.comparingInt(RodeoEndGameInfoDto::getScore).reversed())
+                .collect(Collectors.toList());
+
+        // 构建禁言榜（按时长降序）
+        List<RodeoEndGameInfoDto> forbiddenRanking = dtos.stream()
+                .sorted(Comparator.comparingInt(RodeoEndGameInfoDto::getForbiddenSpeech).reversed())
+                .collect(Collectors.toList());
+
+        // 构建消息内容
+        StringBuilder message = new StringBuilder();
+        message.append("[").append(rodeo.getVenue()).append("]比赛结束\n\n");
+
+        // 添加得分排行榜
+        message.append("🏆 得分排行榜：\n");
+        for (int i = 0; i < scoreRanking.size(); i++) {
+            RodeoEndGameInfoDto dto = scoreRanking.get(i);
+            String playerName = new At(Long.parseLong(dto.getPlayer())).getDisplay(group);
+            message.append(i + 1).append(". ").append(playerName)
+                    .append(" - ").append(dto.getScore()).append("分\n");
+        }
+
+        // 添加禁言排行榜
+        message.append("\n🔇 禁言时长排行榜：\n");
+        for (int i = 0; i < forbiddenRanking.size(); i++) {
+            RodeoEndGameInfoDto dto = forbiddenRanking.get(i);
+            String playerName = new At(Long.parseLong(dto.getPlayer())).getDisplay(group);
+            message.append(i + 1).append(". ").append(playerName)
+                    .append(" - ").append(dto.getForbiddenSpeech()).append("秒\n");
+        }
+
+        // 发送消息
+        group.sendMessage(new PlainText(message.toString()));
 
         cancelPermission(rodeo);
         RodeoManager.removeEndRodeo(rodeo);

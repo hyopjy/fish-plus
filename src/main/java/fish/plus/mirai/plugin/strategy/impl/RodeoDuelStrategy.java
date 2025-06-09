@@ -90,6 +90,7 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         winnerRodeoRecord.setForbiddenSpeech(0);
         winnerRodeoRecord.setTurns(currentRound);
         winnerRodeoRecord.setRodeoDesc(dto.getRodeoDesc());
+        winnerRodeoRecord.setWinFlag(1);
         winnerRodeoRecord.saveOrUpdate();
 
 
@@ -99,6 +100,7 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         loseRodeoRecord.setForbiddenSpeech(dto.getForbiddenSpeech());
         loseRodeoRecord.setTurns(currentRound);
         loseRodeoRecord.setRodeoDesc(dto.getRodeoDesc());
+        loseRodeoRecord.setWinFlag(0);
         loseRodeoRecord.saveOrUpdate();
     }
 
