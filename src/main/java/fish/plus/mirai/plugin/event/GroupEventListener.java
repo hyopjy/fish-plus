@@ -10,6 +10,7 @@ import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.MessageEvent;
 import org.jetbrains.annotations.NotNull;
 
+
 public class GroupEventListener extends SimpleListenerHost {
 
     @EventHandler()
@@ -26,6 +27,13 @@ public class GroupEventListener extends SimpleListenerHost {
         String code = event.getMessage().serializeToMiraiCode();
         if ("开始比赛".equals(code)) {
             RodeoManager.init();
+//            subject.sendMessage("比赛将在一分钟后开始⚡️⚡️");
+        }
+        if ("输出大乱斗结果".equals(code)) {
+            RodeoStrategy strategy =  RodeoFactory.createRodeoDuelStrategy("大乱斗");
+             RodeoManager.CURRENT_SPORTS.forEach((key, value)->{
+                 strategy.endGame(value);
+             });
 //            subject.sendMessage("比赛将在一分钟后开始⚡️⚡️");
         }
 

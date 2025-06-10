@@ -153,6 +153,7 @@ public class RodeoManager {
         // 从记录中提取局数并找出最大局数
         Integer maxTurns = records.stream()
                 .map(RodeoRecord::getTurns)
+                .filter(Objects::nonNull)
                 .max(Comparator.naturalOrder()).orElse(0);
         // 决斗存入赢+输的场次
         if (maxTurns.equals(rodeo.getRound())) {
