@@ -2,6 +2,8 @@ package fish.plus.mirai.plugin.obj.dto;
 
 import lombok.Data;
 
+import java.util.Set;
+
 @Data
 public class RodeoRecordGameInfoDto {
 
@@ -13,5 +15,7 @@ public class RodeoRecordGameInfoDto {
     Integer ForbiddenSpeech;
 
     String rodeoDesc;
+
+    Set<Long> atUser;
 }
 

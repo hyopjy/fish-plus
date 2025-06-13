@@ -108,7 +108,7 @@ public class RodeoManager {
         return false;
     }
 
-    public static Rodeo getCurrent(long groupId, List<Long> atUser){
+    public static Rodeo getCurrent(long groupId, Set<Long> atUser){
         Set<String> keys = CURRENT_SPORTS.keySet();
         for (String key : keys) {
             if(key.startsWith(groupId+"")){
@@ -222,6 +222,7 @@ public class RodeoManager {
         CURRENT_SPORTS.clear();
         // 启动有效的任务
         List<Rodeo> list = getRodeoList();
+        list.forEach(RodeoManager::removeTask);
         list.forEach(RodeoManager::runTask);
     }
 
@@ -269,6 +270,17 @@ public class RodeoManager {
     }
 
 
+    public static void removeTask(Rodeo rodeo){
+        if(Objects.isNull(rodeo)){
+            return;
+        }
+        String startCronKey = rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
+        String endCronKey = rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
+        CronUtil.remove(startCronKey);
+        CronUtil.remove(endCronKey);
+    }
+
+
     public static void runTask(Rodeo rodeo) {
         if(Objects.isNull(rodeo)){
             return;
@@ -299,13 +311,13 @@ public class RodeoManager {
         RodeoEndTask endTask = new RodeoEndTask(taskKey, rodeo);
         CronUtil.schedule(endCronKey, endCronExpression, endTask);
 
-
         if(Objects.nonNull(JavaPluginMain.INSTANCE.getBotInstance())){
             Group group = JavaPluginMain.INSTANCE.getBotInstance().getGroup(rodeo.getGroupId());
             if(Objects.nonNull(group)){
                 group.sendMessage("比赛将在一分钟后开始⚡️⚡️");
             }
         }
+
 
     }
 

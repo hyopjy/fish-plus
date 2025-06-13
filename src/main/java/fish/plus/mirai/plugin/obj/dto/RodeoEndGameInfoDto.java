@@ -10,4 +10,8 @@ public class RodeoEndGameInfoDto {
     private int score;
 
     private int forbiddenSpeech;
+
+    private Double penalty;
+
+    private int shotCount = 0;
 }

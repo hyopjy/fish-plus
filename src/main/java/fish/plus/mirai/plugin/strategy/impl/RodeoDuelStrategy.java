@@ -178,8 +178,13 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         // 发送消息
         group.sendMessage(new PlainText(message));
 
-        cancelPermission(rodeo);
-        RodeoManager.removeEndRodeo(rodeo);
+        try{
+            cancelPermission(rodeo);
+        }catch (Exception e){
+
+        }finally {
+            RodeoManager.removeEndRodeo(rodeo);
+        }
     }
 
     @Override

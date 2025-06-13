@@ -18,9 +18,9 @@ import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.SingleMessage;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static fish.plus.mirai.plugin.strategy.RodeoFactory.DUEL;
 
@@ -35,182 +35,143 @@ public class BotPostSendEventListener extends SimpleListenerHost {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onMessage(@NotNull MessagePostSendEvent event) {
 
-
-//            MqttClientStart.getInstance().subscribeTopic("test/topic");
-//            MqttClientStart.getInstance().publishMessage("test/topic", event.getMessage().contentToString());
         String code = event.getMessage().serializeToMiraiCode();
-
-        System.out.println("监听到消息*** " + code);
         // [轮盘]
         // [决斗]
-        if(!(code.contains("获得一分")
-                || code.contains("开枪击中，但对方是管理员")
-                || code.contains("并爽快地输掉了这局比赛")) ){
+        RodeoRecordGameInfoDto dto = bindRodeoRecordGameInfoDto(code, event);
+        if(Objects.isNull(dto)){
+            System.out.println("解析消息为null ");
             return;
         }
-
-        // [mirai:at:952746839] 😙了一口[mirai:at:1811756096] 的【肩膀🤷‍♀】，让对方被冲昏了3秒头脑。恭喜[mirai:at:952746839] 获得一分！
-        // <target-win> 😙了一口<target-lose> 的【<position>】，让对方被冲昏了<mute-f>头脑。恭喜<target-win> 获得一分！
-        //<target> 开了一枪🔫，枪响了，被冲昏了<mute-f>头脑，并爽快地输掉了这局比赛。
-        // <target-lose> 的<position>被<target-win> 开枪击中，但对方是管理员，逃掉了<mute-f>的禁言
-
-        // 处理消息
-        // 决斗
-        // <target-win> 😙了一口<target-lose> 的【<position>】，让对方被冲昏了<mute-f>头脑。恭喜<target-win> 获得一分！
-        // <target-lose> 的<position>被<target-win> 开枪击中，但对方是管理员，逃掉了<mute-f>的禁言
-
-        // 两位决斗者同时亲亲，<target-2> 😙了一口<target-1> 的【<position-1>】，让对方被冲昏了<mute-f-1>头脑，
-        //   <target-1> 😙了一口<target-2> 的【<position-2>】，让对方被冲昏了<mute-f-2>头脑，两人👩‍❤️‍💋‍👩在一起难解难分
-
-        // 轮盘
-        // <target> 开了一枪🔫，枪响了，被冲昏了<mute-f>头脑，并爽快地输掉了这局比赛。
-
-        // <target> 开了一枪，枪没响，还剩<remain-chamber>轮，幸运之神暂时眷顾于此。恭喜<target>获得一分！
-        // <target> 开了一枪，枪响了，但对方是管理员，逃掉了<mute-f>的禁言
-        // 此轮俄罗斯轮盘因超时结束，因未能全部击发发起人<target>被禁言<mute-f>
-
-        List<String> messageList = new ArrayList<>();
-        MessageChain message = event.getMessage();
-        for (SingleMessage singleMessage : message) {
-            if (singleMessage instanceof At) {
-                At at = (At) singleMessage;
-                messageList.add(at.getTarget() +"");
-            }
-            if(singleMessage instanceof PlainText){
-                PlainText text = (PlainText)  singleMessage;
-                messageList.add(text.serializeToMiraiCode());
-            }
-        }
-        if(!(messageList.size() == 6 || messageList.size() == 2 || messageList.size() == 4)){
-            return;
-        }
-        List<Long> atUser = new ArrayList<>();
-
-        if (messageList.size() == 6) {
-            atUser.add(Long.parseLong(messageList.get(2)));
-            atUser.add(Long.parseLong(messageList.get(4)));
-        }
-        if (messageList.size() == 2) {
-            atUser.add(Long.parseLong(messageList.get(0)));
-        }
-        if (messageList.size() == 4) {
-            atUser.add(Long.parseLong(messageList.get(0)));
-            atUser.add(Long.parseLong(messageList.get(2)));
-        }
-        if(CollectionUtil.isEmpty(atUser)){
+        if(CollectionUtil.isEmpty(dto.getAtUser())){
             System.out.println("at 为00 ");
             return;
         }
-
-        Rodeo redeo = RodeoManager.getCurrent(event.getTarget().getId(), atUser);
+        Rodeo redeo = RodeoManager.getCurrent(event.getTarget().getId(), dto.getAtUser());
         if(Objects.isNull(redeo)){
             // 如果用户没有正在进行的比赛
-            System.out.println("如果用户没有正在进行的比赛*** " + event.getTarget().getId() + "====" + JSONUtil.toJsonStr(atUser));
+            System.out.println("如果用户没有正在进行的比赛*** " + event.getTarget().getId() + "====" + JSONUtil.toJsonStr(dto.getAtUser()));
             return;
         }
-
-        RodeoRecordGameInfoDto dto = new RodeoRecordGameInfoDto();
-        if (DUEL.equals(redeo.getPlayingMethod())) {
-            int totalDuration = 0;
-            String winner = "";
-            String loser = "";
-            // 提取时长
-            String timeStar = "";
-            String durationStr = "";
-            if(messageList.size() == 6){
-              winner = messageList.get(4);
-              loser = messageList.get(2);
-              timeStar = messageList.get(3);
-              durationStr = timeStar.replaceAll(".*?让对方被冲昏了", "").split("头脑")[0];
-            }
-            if(messageList.size() == 4){
-                winner = messageList.get(2);
-                loser = messageList.get(0);
-                timeStar = messageList.get(3);
-                // 但对方是管理员，逃掉了<mute-f>的禁言
-                durationStr = timeStar.replaceAll(".*?逃掉了", "").split("的禁言")[0];
-            }
-
-            String[] timeParts = durationStr.split("分|秒");
-            if(durationStr.contains("分")){
-                int minutes = Integer.parseInt(timeParts[0]);
-                int seconds = timeParts.length > 1 ? Integer.parseInt(timeParts[1]) : 0;
-                totalDuration += minutes * 60 + seconds;
-            }else {
-                totalDuration = Integer.parseInt(timeParts[0]);
-            }
-
-            // 输出结果（可选）
-            System.out.println("赢家: " + winner);
-            System.out.println("输家: " + loser);
-            System.out.println("总时长: " + totalDuration + "秒");
-
-            // 设置 DTO
-            dto.setWinner(winner);
-            dto.setLoser(loser);
-            dto.setForbiddenSpeech(totalDuration); // 根据需要设置
-            dto.setRodeoDesc(code);
-        }else{
-            // 提取输家信息
-            // 提取时长
-            String loser = "";
-            String timeStr = "";
-            String durationStr ="";
-            if (messageList.size() == 6) {
-                String winner = messageList.get(4);
-                // 大乱斗记入输的 和赢家
-                loser = messageList.get(2);
-                timeStr = messageList.get(3);
-                durationStr = timeStr.replaceAll(".*?让对方被冲昏了", "").split("头脑")[0];
-
-                dto.setWinner(winner);
-            }
-            if(messageList.size() == 4){
-                String winner = messageList.get(2);
-                loser = messageList.get(0);
-                timeStr = messageList.get(3);
-                durationStr = timeStr.replaceAll(".*?逃掉了", "").split("的禁言")[0];
-                dto.setWinner(winner);
-            }
-            if(messageList.size() == 2){
-                loser = messageList.get(0);
-                timeStr = messageList.get(1);
-                durationStr = timeStr.replaceAll(".*?被冲昏了", "").split("头脑")[0];
-            }
-            // 比赛记录处理
-            // "[mirai:at:294253294] 开了一枪🔫，枪响了，被冲昏了4分9秒头脑，并爽快地输掉了这局比赛。"
-            // <target-win> 😙了一口<target-lose> 的【<position>】，让对方被冲昏了<mute-f>头脑。恭喜<target-win> 获得一分！
-
-            int totalDuration = 0;
-            String[] timeParts = durationStr.split("分|秒");
-            if(durationStr.contains("分")){
-                int minutes = Integer.parseInt(timeParts[0]);
-                int seconds = timeParts.length > 1 ? Integer.parseInt(timeParts[1]) : 0;
-                totalDuration += minutes * 60 + seconds;
-            }else {
-                totalDuration = Integer.parseInt(timeParts[0]);
-            }
-
-            // 设置 DTO
-            dto.setLoser(loser);
-            dto.setForbiddenSpeech(totalDuration); // 设定总时长（秒）
-            dto.setRodeoDesc(code);
-
-            // 输出结果（可选）
-            System.out.println("输家: " + loser);
-            System.out.println("总时长: " + totalDuration + "秒");
-        }
-
         // 轮盘
         RodeoStrategy strategy =  RodeoFactory.createRodeoDuelStrategy(redeo.getPlayingMethod());
         strategy.record(redeo, dto);
-
         if(RodeoManager.isDuelOver(redeo)){
             strategy.endGame(redeo);
             return;
         }
-
         System.out.println(code);
 
+    }
+
+    // 处理消息
+    // 决斗
+    // <target-win> 😙了一口<target-lose> 的【<position>】，让对方被冲昏了<mute-f>头脑。恭喜<target-win> 获得一分！
+    // SingleMessage 拆分的list: ["934415751", "😙了一口", "952746839", "的身体，让对方被冲昏了<mute-f>头脑。恭喜", "934415751", "获得一分！"]
+    // 6
+
+    // <target-lose> 的<position>被<target-win> 开枪击中，但对方是管理员，逃掉了<mute-f>的禁言
+    // SingleMessage 拆分的list: ["934415751", "的身体被", "952746839", "开枪击中，但对方是管理员，逃掉了1分15秒的禁言"]
+    // 4
+
+    // 轮盘
+    // <target> 开了一枪🔫，枪响了，被冲昏了<mute-f>头脑，并爽快地输掉了这局比赛。
+    // SingleMessage 拆分的list: ["934415751", "了一枪🔫，枪响了，被冲昏了5秒头脑，并爽快地输掉了这局比赛。"]
+    // 2
+
+    // <target> 开了一枪，枪没响，还剩<remain-chamber>轮，幸运之神暂时眷顾于此。恭喜<target>获得一分！
+    // SingleMessage 拆分的list: ["934415751", "开了一枪，枪没响，还剩3轮，幸运之神暂时眷顾于此。恭喜","934415751","获得一分！"]
+    // 4
+
+    // <target> 开了一枪，枪响了，但对方是管理员，逃掉了<mute-f>的禁言
+    // SingleMessage 拆分的list: ["934415751", "开了一枪，枪响了，但对方是管理员，逃掉了1分77秒的禁言"]  -- 这种算target获胜
+    // 2
+
+    // 此轮俄罗斯轮盘因超时结束，因未能全部击发发起人<target>被禁言<mute-f>
+    // SingleMessage 拆分的list: ["此轮俄罗斯轮盘因超时结束，因未能全部击发发起人", "934415751", "被禁言20秒"]  -- 这种算target获胜
+
+
+    private RodeoRecordGameInfoDto bindRodeoRecordGameInfoDto(String code, MessagePostSendEvent event) {
+        // 场景类型判断（新增轮盘超时类型）
+        boolean isTargetMsg = code.contains("获得一分")
+                || code.contains("开枪击中，但对方是管理员")
+                || code.contains("并爽快地输掉了这局比赛")
+                || code.contains("逃掉了")
+                || code.contains("被禁言")
+                || code.contains("超时结束");  // 关键新增
+        if (!isTargetMsg) return null;
+
+        // 解析消息链
+        List<String> messageList = new ArrayList<>();
+        Set<Long> atUser = new HashSet<>();
+        for (SingleMessage msg : event.getMessage()) {
+            if (msg instanceof At) {
+                long target = ((At) msg).getTarget();
+                atUser.add(target);
+                messageList.add(String.valueOf(target));
+            } else if (msg instanceof PlainText) {
+                messageList.add(((PlainText) msg).serializeToMiraiCode());
+            }
+        }
+
+        int size = messageList.size();
+        RodeoRecordGameInfoDto dto = new RodeoRecordGameInfoDto();
+        dto.setAtUser(atUser);
+        dto.setRodeoDesc(code);
+
+        // 场景精确匹配（修正6种情况）
+        try {
+            /* 决斗场景（2种） */
+            if (size == 6) {
+                // 类型1：决斗获胜（6元素）
+                dto.setWinner(messageList.get(4));  // 赢家在索引4
+                dto.setLoser(messageList.get(2));   // 输家在索引2
+                dto.setForbiddenSpeech(parseDuration(messageList.get(3)));
+            }
+            else if (size == 4 && code.contains("开枪击中，但对方是管理员")) {
+                // 类型2：决斗-管理员豁免（4元素）
+                dto.setWinner(messageList.get(2));  // 赢家为开枪者（索引2）
+                dto.setLoser(messageList.get(0));   // 输家为被击中者（索引0）
+                dto.setForbiddenSpeech(0);
+            }
+            /* 轮盘场景（4种） */
+            else if (size == 4) {
+                // 类型3：轮盘正常获胜（4元素）
+                dto.setWinner(messageList.get(2));  // 赢家在索引2
+//                dto.setLoser(messageList.get(0));   // 操作为输家（索引0）
+                // 此场景无禁言
+            }
+            else if (size == 2 && code.contains("但对方是管理员")) {
+                // 类型4：轮盘-管理员豁免（2元素）
+                dto.setWinner(messageList.get(0));  // 操作者获胜
+//                dto.setForbiddenSpeech(parseDuration(messageList.get(1)));
+            }
+            else if (size == 2) {
+                // 类型5：轮盘-正常失败（2元素）
+                dto.setLoser(messageList.get(0));  // 输家
+                dto.setForbiddenSpeech(parseDuration(messageList.get(1)));
+            }
+            else if (size == 3) {  // 关键修正：超时场景是3元素！
+                // 类型6：轮盘超时（3元素）
+                dto.setLoser(messageList.get(1));  // 发起人（索引1）
+                dto.setForbiddenSpeech(parseDuration(messageList.get(2)));
+            }
+            else return null;  // 未匹配任何场景
+        } catch (Exception e) {
+            return null;
+        }
+        return dto;
+    }
+
+    // 万能时间解析（支持5种格式）
+    private int parseDuration(String text) {
+        // 格式1: "1分15秒" 格式2: "5秒" 格式3: "1分77秒" 格式4: "20秒" 格式5: "被禁言20秒"
+        Matcher m = Pattern.compile("(\\d+)[分]?(\\d*)[秒]").matcher(text);
+        if (m.find()) {
+            int min = m.group(1) != null ? Integer.parseInt(m.group(1)) : 0;
+            int sec = !m.group(2).isEmpty() ? Integer.parseInt(m.group(2)) : 0;
+            return min * 60 + sec;
+        }
+        return 0;  // 未找到时间
     }
 }

@@ -5,6 +5,7 @@ import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.entity.rodeo.RodeoRecord;
 import fish.plus.mirai.plugin.manager.PermissionManager;
 import fish.plus.mirai.plugin.manager.RodeoManager;
+import fish.plus.mirai.plugin.obj.dto.PlayerStats;
 import fish.plus.mirai.plugin.obj.dto.RodeoEndGameInfoDto;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
 import net.mamoe.mirai.contact.Group;
@@ -15,6 +16,7 @@ import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.PlainText;
 import fish.plus.mirai.plugin.manager.RodeoRecordManager;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -67,14 +69,27 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
     @Override
     public void record(Rodeo rodeo, RodeoRecordGameInfoDto dto) {
         // 存入输家
-        RodeoRecord loserodeorecord = new RodeoRecord();
-        loserodeorecord.setRodeoId(rodeo.getId());
-        loserodeorecord.setPlayer(dto.getLoser());
-        loserodeorecord.setForbiddenSpeech(dto.getForbiddenSpeech());
-        loserodeorecord.setTurns(null);
-        loserodeorecord.setRodeoDesc(dto.getRodeoDesc());
-        loserodeorecord.setWinFlag(0);
-        loserodeorecord.saveOrUpdate();
+        if(StringUtils.isNotBlank(dto.getLoser())){
+            RodeoRecord loserodeorecord = new RodeoRecord();
+            loserodeorecord.setRodeoId(rodeo.getId());
+            loserodeorecord.setPlayer(dto.getLoser());
+            loserodeorecord.setForbiddenSpeech(dto.getForbiddenSpeech());
+            loserodeorecord.setTurns(null);
+            loserodeorecord.setRodeoDesc(dto.getRodeoDesc());
+            loserodeorecord.setWinFlag(0);
+            loserodeorecord.saveOrUpdate();
+        }
+        if(StringUtils.isNotBlank(dto.getWinner())){
+            RodeoRecord winerrodeorecord = new RodeoRecord();
+            winerrodeorecord.setRodeoId(rodeo.getId());
+            winerrodeorecord.setPlayer(dto.getWinner());
+            winerrodeorecord.setForbiddenSpeech(0);
+            winerrodeorecord.setTurns(null);
+            winerrodeorecord.setRodeoDesc(dto.getRodeoDesc());
+            winerrodeorecord.setWinFlag(1);
+            winerrodeorecord.saveOrUpdate();
+        }
+
     }
 
     @Override
@@ -87,62 +102,70 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
         // 获取当前赛事的所有记录
         List<RodeoRecord> records = RodeoRecordManager.getRecordsByRodeoId(rodeoId);
 
-        // 按玩家分组记录
-        Map<String, List<RodeoRecord>> sumByPlayer = records.stream()
-                .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
-
-        // 创建用于存储结果的 DTO 列表
-        List<RodeoEndGameInfoDto> recordEndGameInfoDtos = new ArrayList<>();
-
-        // 遍历每个玩家的记录并计算总分和禁言时长
-        sumByPlayer.forEach((player, record) -> {
-            RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
-            dto.setPlayer(player);
-            dto.setScore(record.size()); // 总局数作为分数
-            dto.setForbiddenSpeech(record.stream()
-                    .filter(Objects::nonNull)
-                    .mapToInt(RodeoRecord::getForbiddenSpeech)
-                    .sum()); // 累加禁言时长
-            recordEndGameInfoDtos.add(dto);
-        });
+        // 按玩家分组记录（使用Map<String, PlayerStats>存储统计数据）
+        Map<String, PlayerStats> playerStatsMap = records.stream()
+                .collect(Collectors.groupingBy(
+                        RodeoRecord::getPlayer,
+                        Collectors.collectingAndThen(Collectors.toList(), list -> {
+                            PlayerStats stats = new PlayerStats();
+                            stats.setShotCount(list.size());
+                            stats.setTotalForbidden(list.stream()
+                                    .mapToInt(RodeoRecord::getForbiddenSpeech)
+                                    .sum());
+                            // 计算惩罚得分：禁言时长 ÷ 开枪总数（分母为0时计负分）
+                            stats.setScore((stats.getShotCount() > 0)
+                                    ? (double) stats.getTotalForbidden() / stats.getShotCount()
+                                    : -stats.getTotalForbidden());
+                            return stats;
+                        })
+                ));
 
         // 获取所有参赛者
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
         List<String> allPlayers = Arrays.asList(players);
 
-        // 将未参赛的玩家添加到 DTO 列表中，并设置默认值
+        // 创建用于存储结果的DTO列表
+        List<RodeoEndGameInfoDto> recordEndGameInfoDtos = new ArrayList<>();
         allPlayers.forEach(player -> {
-            if (!sumByPlayer.containsKey(player)) {
-                RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
-                dto.setPlayer(player);
-                dto.setScore(0); // 未参赛，分数为 0
-                dto.setForbiddenSpeech(0); // 未参赛，禁言时长为 0
-                recordEndGameInfoDtos.add(dto);
-            }
+            RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
+            dto.setPlayer(player);
+
+            PlayerStats stats = playerStatsMap.getOrDefault(player, new PlayerStats());
+            dto.setPenalty(stats.getScore());           // 保留精确小数
+            dto.setShotCount(stats.getShotCount());
+            dto.setForbiddenSpeech(stats.getTotalForbidden());
         });
 
-        // 按禁言时长倒序排序
-        recordEndGameInfoDtos.sort(Comparator.comparingInt(RodeoEndGameInfoDto::getForbiddenSpeech).reversed());
+        // 按得分升序排序（0分排第一，负分随后）
+        recordEndGameInfoDtos.sort(Comparator.comparingDouble(RodeoEndGameInfoDto::getScore));
 
         // 构建消息内容
-        StringBuilder message = new StringBuilder("[" + rodeo.getVenue() + "]结束，按禁言时长倒序排名如下：\r\n");
-
-        recordEndGameInfoDtos.forEach(dto -> {
+        StringBuilder message = new StringBuilder("[" + rodeo.getVenue() + "]结束，排名如下：\n");
+        int rank = 1;
+        for (RodeoEndGameInfoDto dto : recordEndGameInfoDtos) {
             String playerName = new At(Long.parseLong(dto.getPlayer())).getDisplay(group);
-            message.append(playerName)
-                    .append(" - 禁言时长: ")
+
+            message.append(rank++).append(". ")
+                    .append(playerName)
+                    .append(" - 得分: ")
+                    .append(String.format("%.2f", dto.getPenalty())) // 保留两位小数
+                    .append(" (禁言总时长: ")
                     .append(dto.getForbiddenSpeech())
-                    .append("秒 - 得分: ")
-                    .append(dto.getScore())
-                    .append("\r\n");
-        });
+                    .append("秒, 开枪次数: ")
+                    .append(dto.getShotCount())
+                    .append(")\n");
+        }
 
         // 发送消息
         group.sendMessage(new PlainText(message.toString()));
 
-        // todo 关闭轮盘
-        cancelPermission(rodeo);
-        RodeoManager.removeEndRodeo(rodeo);
+        try {
+            cancelPermission(rodeo);
+        } catch (Exception e) {
+
+        } finally {
+            RodeoManager.removeEndRodeo(rodeo);
+        }
     }
 
     @Override

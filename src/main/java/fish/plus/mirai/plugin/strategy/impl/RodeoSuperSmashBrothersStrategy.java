@@ -175,8 +175,13 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         // 发送消息
         group.sendMessage(new PlainText(message.toString()));
 
-        cancelPermission(rodeo);
-        RodeoManager.removeEndRodeo(rodeo);
+        try{
+            cancelPermission(rodeo);
+        }catch (Exception e){
+
+        }finally {
+            RodeoManager.removeEndRodeo(rodeo);
+        }
     }
 
     @Override
