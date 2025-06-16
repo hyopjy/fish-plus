@@ -26,7 +26,7 @@ public class GroupEventListener extends SimpleListenerHost {
 //        }
         String code = event.getMessage().serializeToMiraiCode();
         if ("开始比赛".equals(code)) {
-            RodeoManager.init();
+            RodeoManager.init(group.getId());
 
         }
 

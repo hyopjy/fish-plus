@@ -21,7 +21,7 @@ public class Rodeo implements Serializable {
     private static final long serialVersionUID = -5567255189132869882L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // 玩法（决斗、轮盘、大乱斗）
@@ -52,12 +52,14 @@ public class Rodeo implements Serializable {
     // 局数
     private int round;
 
+    private int running;
+
     public Rodeo() {
     }
 
     public Rodeo(Long groupId, String venue,
                  String day, String startTime, String endTime,
-                 String players, int round, String playingMethod) {
+                 String players, int round, String playingMethod, int running) {
         this.groupId = groupId;
         this.venue = venue;
         this.day = day;
@@ -66,6 +68,7 @@ public class Rodeo implements Serializable {
         this.players = players;
         this.round = round;
         this.playingMethod = playingMethod;
+        this.running = running;
     }
 
     public boolean saveOrUpdate() {

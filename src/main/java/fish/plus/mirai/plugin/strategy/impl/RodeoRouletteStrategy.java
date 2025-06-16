@@ -8,6 +8,7 @@ import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.obj.dto.PlayerStats;
 import fish.plus.mirai.plugin.obj.dto.RodeoEndGameInfoDto;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Group;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUnit;
@@ -21,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 /**
  * 轮盘
  */
@@ -177,14 +179,17 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
     public void grantPermission(Rodeo rodeo) {
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
         for(String player: players){
+            log.info("轮盘授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.grantDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.ROULETTE_PERMISSION);
         }
+
     }
 
     @Override
     public void cancelPermission(Rodeo rodeo) {
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
         for(String player: players){
+            log.info("轮盘取消授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.revokeDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.ROULETTE_PERMISSION);
         }
     }

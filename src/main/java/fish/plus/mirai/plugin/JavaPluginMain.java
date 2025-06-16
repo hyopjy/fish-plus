@@ -105,7 +105,7 @@ public final class JavaPluginMain extends JavaPlugin {
 //        mqttClientUtil.subscribeTopic("test/topic");
 //        mqttClientUtil.publishMessage("test/topic", "Hello MQTT!");
 
-        RodeoManager.init();
+        RodeoManager.init(null);
     }
 
     // region mirai-console 权限系统示例

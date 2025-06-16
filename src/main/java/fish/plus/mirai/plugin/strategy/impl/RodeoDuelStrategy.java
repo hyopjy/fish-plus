@@ -9,6 +9,7 @@ import fish.plus.mirai.plugin.manager.PermissionManager;
 import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.manager.RodeoRecordManager;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.Message;
@@ -17,9 +18,11 @@ import net.mamoe.mirai.message.data.PlainText;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 /**
  * 决斗
  */
+@Slf4j
 public class RodeoDuelStrategy extends RodeoAbstractStrategy {
 
     private static class Holder {
@@ -196,6 +199,7 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
     public void grantPermission(Rodeo rodeo) {
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
         for(String player: players){
+            log.info("决斗授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.grantDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
         }
     }
@@ -204,6 +208,7 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
     public void cancelPermission(Rodeo rodeo) {
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
         for(String player: players){
+            log.info("决斗取消授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.revokeDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
         }
     }

@@ -3,6 +3,7 @@ package fish.plus.mirai.plugin.manager;
 import cn.chahuyun.hibernateplus.HibernateFactory;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.cron.CronUtil;
 import fish.plus.mirai.plugin.JavaPluginMain;
 import fish.plus.mirai.plugin.constants.Constant;
@@ -216,19 +217,29 @@ public class RodeoManager {
         return true; // 时间段无交叉
     }
 
-    public static void init(){
+    public static void init(Long groupId){
         // 删除结束时间小于当前时间的数据
-        removeExpRodeoList();
-        CURRENT_SPORTS.clear();
+        removeExpRodeoList(groupId);
+        if(Objects.nonNull(groupId)){
+            Set<String> keys = CURRENT_SPORTS.keySet();
+            for (String key : keys) {
+                if(key.startsWith(groupId+"")){
+                    CURRENT_SPORTS.remove(key);
+                }
+            }
+        }else {
+            CURRENT_SPORTS.clear();
+        }
+
         // 启动有效的任务
-        List<Rodeo> list = getRodeoList();
+        List<Rodeo> list = getRodeoList(groupId);
         list.forEach(RodeoManager::removeTask);
         list.forEach(RodeoManager::runTask);
     }
 
-    public static void removeExpRodeoList() {
+    public static void removeExpRodeoList(Long groupId) {
         LocalDateTime now = LocalDateTime.now();
-        List<Rodeo> list = getRodeoList();
+        List<Rodeo> list = getRodeoList(groupId);
         List<Rodeo> expRodeo = list.stream().map(l -> {
             String endTime = l.getDay() + " " + l.getEndTime();
             // 17.05
@@ -255,9 +266,12 @@ public class RodeoManager {
     }
 
 
-    public static List<Rodeo> getRodeoList(){
-//        Map<String, Object> params = new HashMap<>();
-//        params.put("rodeoId", rodeoIds);
+    public static List<Rodeo> getRodeoList(Long groupId){
+        Map<String, Object> params = new HashMap<>();
+        if(Objects.nonNull(groupId)){
+            params.put("groupId", groupId);
+            return  HibernateFactory.selectList(Rodeo.class, params);
+        }
         return HibernateFactory.selectList(Rodeo.class);
 
 //        return HibernateUtil.factory.fromSession(session -> {
@@ -274,10 +288,13 @@ public class RodeoManager {
         if(Objects.isNull(rodeo)){
             return;
         }
-        String startCronKey = rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
-        String endCronKey = rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
+        String startCronKey = rodeo.getGroupId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
+        String endCronKey = rodeo.getGroupId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
         CronUtil.remove(startCronKey);
         CronUtil.remove(endCronKey);
+
+        rodeo.setRunning(0);
+        rodeo.saveOrUpdate();
     }
 
 
@@ -293,7 +310,7 @@ public class RodeoManager {
         String endCronExpression = getCronByDateAndTime(rodeo.getDay(), rodeo.getEndTime());
 
         // 开始任务
-        String startCronKey = rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
+        String startCronKey = rodeo.getGroupId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
         CronUtil.remove(startCronKey);
 
         // groupID|2024-08-23|15:18:00|14:38:00|934415751,952746839
@@ -306,26 +323,32 @@ public class RodeoManager {
         CronUtil.schedule(startCronKey, startCronExpression, startTask);
 
         // 结束任务
-        String endCronKey = rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
+        String endCronKey = rodeo.getGroupId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
         CronUtil.remove(endCronKey);
         RodeoEndTask endTask = new RodeoEndTask(taskKey, rodeo);
         CronUtil.schedule(endCronKey, endCronExpression, endTask);
 
+        LocalDateTime dateTime = LocalDateTime.parse(rodeo.getDay() + " " + rodeo.getStartTime(), Constant.FORMATTER);
+        if(dateTime.isBefore(LocalDateTime.now())){
+            dateTime = LocalDateTime.now().plusSeconds(60L);
+        }
+        String startTime = dateTime.format(Constant.FORMATTER);
+
         if(Objects.nonNull(JavaPluginMain.INSTANCE.getBotInstance())){
             Group group = JavaPluginMain.INSTANCE.getBotInstance().getGroup(rodeo.getGroupId());
             if(Objects.nonNull(group)){
-                group.sendMessage("比赛将在一分钟后开始⚡️⚡️");
+                group.sendMessage("比赛将在[ "+startTime+" ]开始⚡️⚡️");
             }
         }
-
-
+        rodeo.setRunning(1);
+        rodeo.saveOrUpdate();
     }
 
     public static String getCronByDateAndTime(String date, String time) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime dateTime = LocalDateTime.parse(date + " " + time, formatter);
+        LocalDateTime dateTime = LocalDateTime.parse(date + " " + time, Constant.FORMATTER);
         if(dateTime.isBefore(LocalDateTime.now())){
-            dateTime = LocalDateTime.now().plusSeconds(60L);
+            long random = RandomUtil.randomLong(50, 61);
+            dateTime = LocalDateTime.now().plusSeconds(random);
         }
         int seconds = dateTime.getSecond();
         int minutes = dateTime.getMinute();

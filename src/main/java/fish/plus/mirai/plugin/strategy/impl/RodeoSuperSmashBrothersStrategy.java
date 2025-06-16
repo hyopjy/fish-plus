@@ -9,6 +9,7 @@ import fish.plus.mirai.plugin.manager.PermissionManager;
 import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.obj.dto.RodeoEndGameInfoDto;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.Message;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 /**
  * 大乱斗
  */
+@Slf4j
 public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 //    大乱斗（多人决斗，逻辑同轮盘）
 //            1.分配决斗[多方][时间段]（10分钟左右，手动配置）内的比赛（按时间段给权限）
@@ -193,6 +195,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
     public void grantPermission(Rodeo rodeo) {
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
         for(String player: players){
+            log.info("大乱斗授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.grantDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
         }
     }
@@ -201,6 +204,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
     public void cancelPermission(Rodeo rodeo) {
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
         for(String player: players){
+            log.info("大乱斗取消授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.revokeDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
         }
     }

@@ -58,7 +58,7 @@ public abstract class RodeoAbstractStrategy implements RodeoStrategy {
         if(RodeoFactory.DUEL.equals(playingMethod)){
             round = Integer.parseInt(timeArr[6]);
         }
-        Rodeo rodeo = new Rodeo(groupId, venue, day, startTime, endTime, players, round, playingMethod);
+        Rodeo rodeo = new Rodeo(groupId, venue, day, startTime, endTime, players, round, playingMethod, 0);
         // 时间是否有交叉
         if (!RodeoManager.checkDateAndTime(rodeo.getDay(), rodeo.getStartTime(), rodeo.getEndTime())) {
             subject.sendMessage("时间段有交叉 请重新配置" );
