@@ -45,9 +45,9 @@ public class HibernateUtil {
         configuration.setFormatSql(true);
         try {
             configuration.setDriveType(DriveType.MYSQL);
-            configuration.setAddress("xxxx/fish-plus");
-            configuration.setUser("xx");
-            configuration.setPassword("xxx");
+            configuration.setAddress("47.121.130.134/fish-plus");
+            configuration.setUser("root");
+            configuration.setPassword("zyjy110.");
             HibernatePlusService.loadingService(configuration);
         } catch (HibernateException e) {
             Log.error("请删除data中的HuYanEconomy.mv.db后重新启动！", e);

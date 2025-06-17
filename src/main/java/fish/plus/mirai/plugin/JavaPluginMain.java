@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.cron.CronUtil;
 import fish.plus.mirai.plugin.event.BotPostSendEventListener;
 import fish.plus.mirai.plugin.event.GroupEventListener;
+import fish.plus.mirai.plugin.manager.GroupManagerRunner;
 import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.mqtt.MqttClientStart;
 import fish.plus.mirai.plugin.util.HibernateUtil;
@@ -106,6 +107,8 @@ public final class JavaPluginMain extends JavaPlugin {
 //        mqttClientUtil.publishMessage("test/topic", "Hello MQTT!");
 
         RodeoManager.init(null);
+        Thread thread = new Thread(new GroupManagerRunner());
+        thread.start();
     }
 
     // region mirai-console 权限系统示例
