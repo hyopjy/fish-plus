@@ -3,6 +3,7 @@ import cn.chahuyun.hibernateplus.HibernateFactory;
 import fish.plus.mirai.plugin.JavaPluginMain;
 import fish.plus.mirai.plugin.entity.rodeo.GroupInfo;
 import fish.plus.mirai.plugin.entity.rodeo.GroupUser;
+import fish.plus.mirai.plugin.mqtt.MqttClientStart;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Group;
 import org.apache.commons.lang3.StringUtils;
@@ -11,6 +12,7 @@ import java.util.*;
 
 public class GroupManagerRunner implements Runnable {
     private volatile boolean running = true; // 使用volatile确保可见性
+    private volatile boolean initialized = false; // 添加初始化标志
 
     public void loadGroup() {
         List<Long> initGroupList = new ArrayList<>(2);
@@ -32,9 +34,13 @@ public class GroupManagerRunner implements Runnable {
                     userList.add(user);
                 });
                 userList.forEach(GroupUser::saveOrUpdate);
+
+                // 订阅主题
+//                MqttClientStart.getInstance().subscribeTopic("topic/"+ g);
             }
         });
-        stop();
+        initialized = true; // 标记已初始化
+        // 不要在这里调用stop()，让线程自然结束
     }
 
     public void removeGroupUser(Long groupId) {
@@ -53,17 +59,20 @@ public class GroupManagerRunner implements Runnable {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
+                    if (!running) {
+                        break; // 如果是正常停止，退出循环
+                    }
                     throw new RuntimeException(e);
                 }
                 continue;
-            }else{
+            } else {
                 loadGroup();
+                // 初始化完成后，线程可以退出
+                if (initialized) {
+                    break;
+                }
             }
-
-            // 当 bot 有效时执行业务逻辑
-            // ...
         }
-
     }
 
     // 提供停止方法

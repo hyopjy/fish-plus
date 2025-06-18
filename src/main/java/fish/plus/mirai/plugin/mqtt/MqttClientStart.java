@@ -11,6 +11,8 @@ public class MqttClientStart {
     private static final List<String> SUBSCRIBED_TOPICS = new ArrayList<>();
     private static MqttClientStart instance;
     private MqttClient mqttClient;
+    private volatile boolean running = true; // 添加停止标志
+    private Thread listeningThread; // 保存线程引用
 
     private MqttClientStart() {
         try {
@@ -26,14 +28,16 @@ public class MqttClientStart {
                 public void connectionLost(Throwable cause) {
                     System.out.println("Connection lost, attempting to reconnect...");
                     int retryCount = 0;
-                    while (!mqttClient.isConnected()) {
+                    while (!mqttClient.isConnected() && running) { // 添加running检查
                         try {
                             int delayMs = (1 << retryCount) * 1000; // 指数退避算法 [4]
                             if (delayMs > 60000) delayMs = 60000; // 最大延迟时间限制为60秒
                             Thread.sleep(delayMs);
-                            mqttClient.connect(connOpts);
-                            System.out.println("Reconnected successfully.");
-                            resubscribeTopics(); // 重连成功后恢复订阅 [1]
+                            if (running) { // 再次检查running状态
+                                mqttClient.connect(connOpts);
+                                System.out.println("Reconnected successfully.");
+                                resubscribeTopics(); // 重连成功后恢复订阅 [1]
+                            }
                         } catch (Exception e) {
                             retryCount++;
                             System.out.println("Reconnect attempt " + retryCount + " failed, retrying...");
@@ -97,6 +101,18 @@ public class MqttClientStart {
     }
 
     public void closed(){
+        running = false; // 设置停止标志
+        
+        // 停止监听线程
+        if (listeningThread != null && listeningThread.isAlive()) {
+            listeningThread.interrupt();
+            try {
+                listeningThread.join(5000); // 等待最多5秒
+            } catch (InterruptedException e) {
+                System.out.println("Interrupted while waiting for listening thread to stop");
+            }
+        }
+        
         if (mqttClient != null && mqttClient.isConnected()) {
             try {
                 mqttClient.close(true);
@@ -107,15 +123,18 @@ public class MqttClientStart {
     }
 
     private void startListeningThread() {
-        new Thread(() -> {
-            while (true) {
+        listeningThread = new Thread(() -> {
+            while (running) { // 使用running标志控制循环
                 if (mqttClient != null && mqttClient.isConnected()) {
                     try {
                         Thread.sleep(1000); // 每隔一秒检查一次连接状态
                     } catch (InterruptedException e) {
+                        if (!running) {
+                            break; // 如果是正常停止，退出循环
+                        }
                         e.printStackTrace();
                     }
-                } else {
+                } else if (running) { // 只有在running为true时才尝试重连
                     System.out.println("MQTT client is not connected. Attempting to reconnect...");
                     try {
                         mqttClient.reconnect();
@@ -125,6 +144,8 @@ public class MqttClientStart {
                     }
                 }
             }
-        }).start();
+        });
+        listeningThread.setDaemon(true); // 设置为守护线程
+        listeningThread.start();
     }
 }

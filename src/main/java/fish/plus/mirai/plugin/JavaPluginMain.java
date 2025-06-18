@@ -53,12 +53,31 @@ public final class JavaPluginMain extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // 停止所有线程和任务
+        if (groupManagerThread != null && groupManagerThread.isAlive()) {
+            if (groupManagerRunner != null) {
+                groupManagerRunner.stop();
+            }
+            groupManagerThread.interrupt();
+            try {
+                groupManagerThread.join(5000); // 等待最多5秒
+            } catch (InterruptedException e) {
+                Log.info("等待GroupManagerRunner线程停止时被中断");
+            }
+        }
+        
+        // 停止MQTT客户端
         MqttClientStart.getInstance().closed();
+        
+        // 停止定时任务
         CronUtil.stop();
+        
         Log.info("插件已卸载!");
     }
 
     public Bot bot;
+    private Thread groupManagerThread; // 保存线程引用
+    private GroupManagerRunner groupManagerRunner; // 保存runner引用
 
     public Bot getBotInstance() {
         if (bot == null) {
@@ -75,12 +94,10 @@ public final class JavaPluginMain extends JavaPlugin {
     @Override
     public void onEnable() {
         getLogger().info("日志");
-        // 初始化mqtt
-//        MqttClientStart.getInstance();
+
         CronUtil.start();
         //初始化插件数据库
         HibernateUtil.init(this);
-
 
         EventChannel<Event> eventChannel = GlobalEventChannel.INSTANCE.parentScope(this);
         eventChannel.registerListenerHost(new BotPostSendEventListener());
@@ -106,9 +123,16 @@ public final class JavaPluginMain extends JavaPlugin {
 //        mqttClientUtil.subscribeTopic("test/topic");
 //        mqttClientUtil.publishMessage("test/topic", "Hello MQTT!");
 
+        // 初始化mqtt
+        MqttClientStart.getInstance();
+
         RodeoManager.init(null);
-        Thread thread = new Thread(new GroupManagerRunner());
-        thread.start();
+        
+        // 启动GroupManagerRunner线程并保存引用
+        groupManagerRunner = new GroupManagerRunner();
+        groupManagerThread = new Thread(groupManagerRunner);
+        groupManagerThread.setDaemon(true); // 设置为守护线程
+        groupManagerThread.start();
     }
 
     // region mirai-console 权限系统示例
