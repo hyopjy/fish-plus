@@ -36,7 +36,7 @@ public class GroupManagerRunner implements Runnable {
                 userList.forEach(GroupUser::saveOrUpdate);
 
                 // 订阅主题
-//                MqttClientStart.getInstance().subscribeTopic("topic/"+ g);
+                MqttClientStart.getInstance().subscribeTopic("topic/"+ g);
             }
         });
         initialized = true; // 标记已初始化
