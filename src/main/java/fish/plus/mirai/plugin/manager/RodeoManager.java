@@ -337,7 +337,7 @@ public class RodeoManager {
         if(Objects.nonNull(JavaPluginMain.INSTANCE.getBotInstance())){
             Group group = JavaPluginMain.INSTANCE.getBotInstance().getGroup(rodeo.getGroupId());
             if(Objects.nonNull(group)){
-                group.sendMessage("比赛将在[ "+startTime+" ]开始⚡️⚡️");
+                group.sendMessage(rodeo.getVenue()+"("+ rodeo.getPlayingMethod() +")将在[ "+startTime+" ]开始⚡️⚡️");
             }
         }
         rodeo.setRunning(1);

@@ -1,5 +1,6 @@
 package fish.plus.mirai.plugin.mqtt;
 
+import fish.plus.mirai.plugin.manager.RodeoManager;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.util.ArrayList;
@@ -48,6 +49,8 @@ public class MqttClientStart {
                 @Override
                 public void messageArrived(String topic, MqttMessage message) throws Exception {
                     System.out.println("Message arrived: " + topic + " " + new String(message.getPayload()));
+                    String messageStr = new String(message.getPayload());
+                    RodeoManager.init(Long.parseLong(messageStr));
                 }
 
                 @Override
