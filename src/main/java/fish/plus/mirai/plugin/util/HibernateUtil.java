@@ -41,8 +41,8 @@ public class HibernateUtil {
     public static void init(JavaPluginMain main) {
         Configuration configuration = HibernatePlusService.createConfiguration(main.getClass());
         configuration.setPackageName("fish.plus.mirai.plugin.entity");
-        configuration.setShowSql(true);
-        configuration.setFormatSql(true);
+        configuration.setShowSql(false);
+        configuration.setFormatSql(false);
         try {
             configuration.setDriveType(DriveType.MYSQL);
             configuration.setAddress("47.121.130.134/fish-plus");

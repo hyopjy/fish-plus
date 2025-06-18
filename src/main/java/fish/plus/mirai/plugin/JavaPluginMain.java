@@ -124,7 +124,31 @@ public final class JavaPluginMain extends JavaPlugin {
 //        mqttClientUtil.publishMessage("test/topic", "Hello MQTT!");
 
         // 初始化mqtt
-        MqttClientStart.getInstance();
+        MqttClientStart mqttClient = MqttClientStart.getInstance();
+        
+        // 记录MQTT初始化状态
+        Log.info("MQTT客户端初始化完成，状态: " + mqttClient.getConnectionStatus());
+        
+        // 等待MQTT连接建立（减少等待时间）
+        int waitCount = 0;
+        while (!mqttClient.isConnected() && waitCount < 15) { // 减少到最多等待15秒
+            try {
+                Thread.sleep(1000);
+                waitCount++;
+                if (waitCount % 3 == 0) { // 每3秒记录一次状态
+                    Log.info("等待MQTT连接... (" + waitCount + "/15秒) 状态: " + mqttClient.getConnectionStatus());
+                }
+            } catch (InterruptedException e) {
+                Log.info("等待MQTT连接时被中断");
+                break;
+            }
+        }
+        
+        if (mqttClient.isConnected()) {
+            Log.info("MQTT连接成功建立！");
+        } else {
+            Log.info("MQTT连接超时，但继续启动其他组件");
+        }
 
         RodeoManager.init(null);
         
@@ -133,6 +157,63 @@ public final class JavaPluginMain extends JavaPlugin {
         groupManagerThread = new Thread(groupManagerRunner);
         groupManagerThread.setDaemon(true); // 设置为守护线程
         groupManagerThread.start();
+        
+        // 启动MQTT状态监控线程
+        startMqttStatusMonitor();
+    }
+
+    /**
+     * 启动MQTT状态监控线程
+     */
+    private void startMqttStatusMonitor() {
+        Thread monitorThread = new Thread(() -> {
+            MqttClientStart mqttClient = MqttClientStart.getInstance();
+            int lastReconnectAttempts = 0;
+            boolean lastMaxAttemptsReached = false;
+            
+            while (true) {
+                try {
+                    Thread.sleep(30000); // 每30秒检查一次
+                    
+                    // 检查重连次数变化
+                    int currentAttempts = mqttClient.getReconnectAttempts();
+                    if (currentAttempts != lastReconnectAttempts) {
+                        Log.info("MQTT重连次数变化: " + lastReconnectAttempts + " -> " + currentAttempts);
+                        lastReconnectAttempts = currentAttempts;
+                    }
+                    
+                    // 检查最大尝试次数状态变化
+                    boolean currentMaxAttemptsReached = mqttClient.isMaxAttemptsReached();
+                    if (currentMaxAttemptsReached != lastMaxAttemptsReached) {
+                        if (currentMaxAttemptsReached) {
+                            Log.info("MQTT已达到最大重连次数，将等待60秒后重新尝试");
+                        } else {
+                            Log.info("MQTT重置重连计数，重新开始连接尝试");
+                        }
+                        lastMaxAttemptsReached = currentMaxAttemptsReached;
+                    }
+                    
+                    // 如果重连次数较多但未达到最大次数，记录警告
+                    if (currentAttempts >= mqttClient.getMaxReconnectAttempts() * 0.6 && !currentMaxAttemptsReached) {
+                        Log.info("MQTT重连次数较多: " + currentAttempts + "/" + mqttClient.getMaxReconnectAttempts());
+                    }
+                    
+                    // 记录当前连接状态
+                    if (!mqttClient.isConnected()) {
+                        Log.info("MQTT当前状态: " + mqttClient.getConnectionStatus());
+                    }
+                    
+                } catch (InterruptedException e) {
+                    Log.info("MQTT状态监控线程被中断");
+                    break;
+                } catch (Exception e) {
+                    Log.info("MQTT状态监控异常: " + e.getMessage());
+                }
+            }
+        });
+        monitorThread.setDaemon(true);
+        monitorThread.setName("MQTT-Status-Monitor");
+        monitorThread.start();
     }
 
     // region mirai-console 权限系统示例
