@@ -60,7 +60,7 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
         Message m = new PlainText(message1);
         for(String str : players){
             Long playerId = Long.parseLong(str);
-            m = m.plus(new At(playerId).getDisplay(group));
+            m = m.plus(new At(playerId));
         }
         m = m.plus(message2);
 
@@ -136,30 +136,25 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
             dto.setPenalty(stats.getScore());           // 保留精确小数
             dto.setShotCount(stats.getShotCount());
             dto.setForbiddenSpeech(stats.getTotalForbidden());
+            recordEndGameInfoDtos.add(dto);
         });
 
         // 按得分升序排序（0分排第一，负分随后）
         recordEndGameInfoDtos.sort(Comparator.comparingDouble(RodeoEndGameInfoDto::getScore));
 
         // 构建消息内容
-        StringBuilder message = new StringBuilder("[" + rodeo.getVenue() + "]结束，排名如下：\n");
+//        StringBuilder message = new StringBuilder("[" + rodeo.getVenue() + "]结束，排名如下：\n");
+        Message m = new PlainText(String.format("[%s]结束，排名如下\r\n", rodeo.getVenue()));
         int rank = 1;
         for (RodeoEndGameInfoDto dto : recordEndGameInfoDtos) {
-            String playerName = new At(Long.parseLong(dto.getPlayer())).getDisplay(group);
-
-            message.append(rank++).append(". ")
-                    .append(playerName)
-                    .append(" - 得分: ")
-                    .append(String.format("%.2f", dto.getPenalty())) // 保留两位小数
-                    .append(" (禁言总时长: ")
-                    .append(dto.getForbiddenSpeech())
-                    .append("秒, 开枪次数: ")
-                    .append(dto.getShotCount())
-                    .append(")\n");
+            m =  m.plus(rank++ + ".");
+            m = m.plus(new At(Long.parseLong(dto.getPlayer())));
+            m = m.plus(" - 得分: ");
+            m = m.plus(String.format("%.1f", dto.getPenalty()));
+            m = m.plus(" (禁言总时长: "  + dto.getForbiddenSpeech() + "秒, 开枪次数: " + dto.getShotCount() + ") \r\n");
         }
-
         // 发送消息
-        group.sendMessage(new PlainText(message.toString()));
+        group.sendMessage(m);
 
         try {
             cancelPermission(rodeo);

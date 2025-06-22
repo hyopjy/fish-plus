@@ -52,23 +52,21 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         String messageFormat2 = "\r\n正式展开决斗的巅峰对决！⚔[%s]局比赛，谁将笑傲鱼塘🤺，谁又将菜然神伤🥬？\r\n";
 
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
-        Long player1 = Long.parseLong(players[0]);
-        Long player2 = Long.parseLong(players[1]);
+        long player1 = Long.parseLong(players[0]);
+        long player2 = Long.parseLong(players[1]);
 
         String message1 = String.format(messageFormat1, rodeo.getVenue(), rodeo.getStartTime(),
                 rodeo.getEndTime());
 
         String message2 = String.format(messageFormat2, rodeo.getRound());
 
+
         Message m = new PlainText(message1);
-        m = m.plus(new At(player1).getDisplay(group));
+        m = m.plus(new At(player1));
         m = m.plus(" VS ");
-        m = m.plus(new At(player2).getDisplay(group));
+        m = m.plus(new At(player2));
         m.plus(message2);
         group.sendMessage(m);
-
-
-        // todo 开始决斗权限
 
     }
 
@@ -166,20 +164,22 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         Long loser = p1WinCount > p2WinCount ? player2 : player1;
 
         // 构建输出消息
-        String messageFormat = "\r\n %s结束，恭喜胜者%s以[%d:%d]把对手%s鸡哔！🔫\r\n" +
-                "%s共被禁言%d 秒\r\n" +
-                "%s共被禁言%d 秒\r\n" +
-                "菜！就！多！练！ ";
-        String message = String.format(messageFormat,
-                rodeo.getVenue(),
-                new At(winner).getDisplay(group),
-                p1WinCount, p2WinCount,
-                new At(loser).getDisplay(group),
-                new At(player1).getDisplay(group), p1ForbiddenTime,
-                new At(player2).getDisplay(group), p2ForbiddenTime);
-
+//        String messageFormat = "\r\n %s结束，恭喜胜者%s以[%d:%d]把对手%s鸡哔！🔫\r\n" ;
+//                "%s共被禁言%d 秒\r\n" +
+//                "%s共被禁言%d 秒\r\n" +
+//                "菜！就！多！练！ ";
+        Message m = new PlainText(String.format("\r\n %s结束，恭喜胜者", rodeo.getVenue()));
+        m = m.plus(new At(winner));
+        m = m.plus(String.format("以[%d:%d]把对手", p1WinCount, p2WinCount));
+        m = m.plus(new At(loser));
+        m = m.plus(" 鸡哔！🔫 \r\n");
+        m = m.plus(new At(player1));
+        m = m.plus(String.format("共被禁言%d 秒\r\n", p1ForbiddenTime));
+        m = m.plus(new At(player2));
+        m = m.plus(String.format("共被禁言%d 秒\r\n", p2ForbiddenTime));
+        m.plus("菜！就！多！练！ ");
         // 发送消息
-        group.sendMessage(new PlainText(message));
+        group.sendMessage(m);
 
         try{
             cancelPermission(rodeo);

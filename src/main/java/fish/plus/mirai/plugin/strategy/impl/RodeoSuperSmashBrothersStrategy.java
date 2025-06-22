@@ -66,8 +66,8 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
         Message m = new PlainText(message1);
         for(String str : players){
-            Long playerId = Long.parseLong(str);
-            m = m.plus(new At(playerId).getDisplay(group));
+            long playerId = Long.parseLong(str);
+            m = m.plus(new At(playerId));
         }
         m = m.plus(message2);
 
@@ -145,37 +145,34 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         // 构建排行榜（按分数降序）
         List<RodeoEndGameInfoDto> scoreRanking = dtos.stream()
                 .sorted(Comparator.comparingInt(RodeoEndGameInfoDto::getScore).reversed())
-                .collect(Collectors.toList());
+                .toList();
 
         // 构建禁言榜（按时长降序）
         List<RodeoEndGameInfoDto> forbiddenRanking = dtos.stream()
                 .sorted(Comparator.comparingInt(RodeoEndGameInfoDto::getForbiddenSpeech).reversed())
-                .collect(Collectors.toList());
+                .toList();
 
         // 构建消息内容
-        StringBuilder message = new StringBuilder();
-        message.append("[").append(rodeo.getVenue()).append("]比赛结束\n\n");
+        Message m = new PlainText(String.format("[%s]结束，]比赛结束\r\n 🏆 得分排行榜： \r\n", rodeo.getVenue()));
 
-        // 添加得分排行榜
-        message.append("🏆 得分排行榜：\n");
         for (int i = 0; i < scoreRanking.size(); i++) {
             RodeoEndGameInfoDto dto = scoreRanking.get(i);
-            String playerName = new At(Long.parseLong(dto.getPlayer())).getDisplay(group);
-            message.append(i + 1).append(". ").append(playerName)
-                    .append(" - ").append(dto.getScore()).append("分\n");
+            m = m.plus(i+1 + ".");
+            m = m.plus(new At(Long.parseLong(dto.getPlayer())));
+            m = m.plus(" - " + dto.getScore() + "分 \r\n");
         }
 
         // 添加禁言排行榜
-        message.append("\n🔇 禁言时长排行榜：\n");
+       m = m.plus("\r\n🔇 禁言时长排行榜：\r\n");
         for (int i = 0; i < forbiddenRanking.size(); i++) {
             RodeoEndGameInfoDto dto = forbiddenRanking.get(i);
-            String playerName = new At(Long.parseLong(dto.getPlayer())).getDisplay(group);
-            message.append(i + 1).append(". ").append(playerName)
-                    .append(" - ").append(dto.getForbiddenSpeech()).append("秒\n");
+            m = m.plus(i+1 + ".");
+            m = m.plus(new At(Long.parseLong(dto.getPlayer())));
+            m = m.plus(" - " + dto.getForbiddenSpeech() + "秒 \r\n");
         }
 
         // 发送消息
-        group.sendMessage(new PlainText(message.toString()));
+        group.sendMessage(m);
 
         try{
             cancelPermission(rodeo);

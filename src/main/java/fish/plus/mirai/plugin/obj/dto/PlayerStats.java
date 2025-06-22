@@ -7,5 +7,5 @@ import lombok.Data;
 public class PlayerStats {
     int shotCount = 0;
     int totalForbidden = 0;
-    double score = 0.0;
+    double score = -1.00;
 }

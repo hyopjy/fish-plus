@@ -17,6 +17,7 @@ public class GroupManagerRunner implements Runnable {
 
     public void loadGroup() {
         List<Long> initGroupList = new ArrayList<>(2);
+        initGroupList.add(758085692L);
         initGroupList.add(835186488L);
         initGroupList.forEach(g -> {
             Group group = JavaPluginMain.INSTANCE.getBotInstance().getGroup(g);
@@ -35,11 +36,10 @@ public class GroupManagerRunner implements Runnable {
                     userList.add(user);
                 });
                 userList.forEach(GroupUser::saveOrUpdate);
-
-                // 将主题添加到待订阅列表，而不是直接订阅
-                pendingSubscriptions.add(g);
                 System.out.println("添加待订阅主题: topic/" + g);
             }
+            // 将主题添加到待订阅列表，而不是直接订阅
+            pendingSubscriptions.add(g);
         });
         initialized = true; // 标记已初始化
         
@@ -49,6 +49,7 @@ public class GroupManagerRunner implements Runnable {
             // 将已订阅的主题重新加入待订阅列表
             pendingSubscriptions.clear();
             initGroupList.forEach(g -> {
+                System.out.println("----》" + g);
                 pendingSubscriptions.add(g);
                 System.out.println("重新添加待订阅主题: topic/" + g);
             });
@@ -79,36 +80,43 @@ public class GroupManagerRunner implements Runnable {
         List<Long> subscribedGroups = new ArrayList<>();
         
         for (Long groupId : pendingSubscriptions) {
-            try {
-                String topic = "topic/" + groupId;
-                mqttClient.subscribeTopic(topic);
-                subscribedGroups.add(groupId);
-                System.out.println("成功订阅主题: " + topic);
-                
-                // 验证订阅是否成功
-                if (mqttClient.isTopicSubscribed(topic)) {
-                    System.out.println("验证订阅成功: " + topic);
-                } else {
-                    System.err.println("订阅验证失败: " + topic);
-                }
-                
-                // 订阅成功后立即发送一条测试消息验证订阅
-                mqttClient.publishMessage(topic, "GroupManagerRunner订阅测试消息");
-                
-            } catch (Exception e) {
-                System.err.println("订阅主题失败: topic/" + groupId + ", 错误: " + e.getMessage());
-            }
+            subscribedGroups(groupId, mqttClient, subscribedGroups);
         }
+
 
         // 从待订阅列表中移除已订阅的主题
         pendingSubscriptions.removeAll(subscribedGroups);
-        
+
         if (!pendingSubscriptions.isEmpty()) {
             System.out.println("还有 " + pendingSubscriptions.size() + " 个主题待订阅");
         } else {
             System.out.println("所有主题订阅完成");
             // 输出详细的订阅状态信息
             System.out.println(mqttClient.getSubscriptionStatus());
+        }
+    }
+
+    private static void subscribedGroups(Long groupId, MqttClientStart mqttClient, List<Long> subscribedGroups) {
+        try {
+            System.out.println("待订阅的主题： " + groupId);
+            String topic = "topic/" + groupId;
+            mqttClient.subscribeTopic(topic);
+            subscribedGroups.add(groupId);
+            System.out.println("成功订阅主题: " + topic);
+
+            // 验证订阅是否成功
+            if (mqttClient.isTopicSubscribed(topic)) {
+                System.out.println("验证订阅成功: " + topic);
+            } else {
+                System.err.println("订阅验证失败: " + topic);
+            }
+
+            // 订阅成功后立即发送一条测试消息验证订阅
+//                mqttClient.publishMessage(topic, "GroupManagerRunner订阅测试消息");
+
+
+        } catch (Exception e) {
+            System.err.println("订阅主题失败: topic/" + groupId + ", 错误: " + e.getMessage());
         }
     }
 
