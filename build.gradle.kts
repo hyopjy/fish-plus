@@ -15,6 +15,15 @@ repositories {
         maven("https://maven.aliyun.com/repository/public") // 阿里云国内代理仓库
     }
     maven("https://central.sonatype.com/repository/maven-snapshots/")
+
+//    maven {
+//        name = "GitHubPackages"
+//        url = uri("https://maven.pkg.github.com/hyopjy/fish-common-api")
+//        credentials {
+//            username = (project.findProperty("gpr.user") ?: System.getenv("GPR_USER")).toString()
+//            password = (project.findProperty("gpr.key") ?: System.getenv("GPR_API_KEY")).toString()
+//        }
+//    }
     mavenCentral()
 }
 
@@ -40,7 +49,7 @@ dependencies {
     implementation("org.apache.commons:commons-lang3:3.8.1")
     implementation("cn.chahuyun:hibernate-plus:1.0.16")
     testConsoleRuntime("top.mrxiaom.mirai:overflow-core:1.0.5")
-
+//    implementation("com.fish:fish-common-api:1.0.2")
 
 
 }

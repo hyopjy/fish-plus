@@ -94,7 +94,6 @@ public final class JavaPluginMain extends JavaPlugin {
     @Override
     public void onEnable() {
         getLogger().info("日志");
-
         CronUtil.start();
         //初始化插件数据库
         HibernateUtil.init(this);
