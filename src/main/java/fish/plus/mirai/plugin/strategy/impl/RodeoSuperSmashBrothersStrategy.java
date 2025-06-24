@@ -1,6 +1,7 @@
 package fish.plus.mirai.plugin.strategy.impl;
 
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
@@ -9,6 +10,7 @@ import fish.plus.mirai.plugin.manager.PermissionManager;
 import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.obj.dto.RodeoEndGameInfoDto;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
+import fish.plus.mirai.plugin.util.Log;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.message.data.At;
@@ -118,7 +120,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         String[] playersArray = rodeo.getPlayers().split(Constant.MM_SPILT);
         List<String> allPlayers = Arrays.asList(playersArray);
 
-        List<RodeoEndGameInfoDto> dtos = new ArrayList<>();
+        List<RodeoEndGameInfoDto> dtoList = new ArrayList<>();
 
         // 遍历所有参赛者生成统计数据（包含无记录的玩家）
         allPlayers.forEach(player -> {
@@ -126,29 +128,29 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
             RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
             dto.setPlayer(player);
+            if(!CollectionUtil.isEmpty(playerRecords)){
+                // 计算获胜次数（只统计winFlag=1的记录）
+                int winCount = (int) playerRecords.stream()
+                        .filter(r -> r.getWinFlag() == 1)
+                        .count();
+                dto.setScore(winCount);
 
-            // 计算获胜次数（只统计winFlag=1的记录）
-            int winCount = (int) playerRecords.stream()
-                    .filter(r -> r.getWinFlag() == 1)
-                    .count();
-            dto.setScore(winCount);
-
-            // 计算总禁言时长
-            int totalForbidden = playerRecords.stream()
-                    .mapToInt(RodeoRecord::getForbiddenSpeech)
-                    .sum();
-            dto.setForbiddenSpeech(totalForbidden);
-
-            dtos.add(dto);
+                // 计算总禁言时长
+                int totalForbidden = playerRecords.stream()
+                        .mapToInt(RodeoRecord::getForbiddenSpeech)
+                        .sum();
+                dto.setForbiddenSpeech(totalForbidden);
+            }
+            dtoList.add(dto);
         });
 
         // 构建排行榜（按分数降序）
-        List<RodeoEndGameInfoDto> scoreRanking = dtos.stream()
+        List<RodeoEndGameInfoDto> scoreRanking = dtoList.stream()
                 .sorted(Comparator.comparingInt(RodeoEndGameInfoDto::getScore).reversed())
                 .toList();
 
         // 构建禁言榜（按时长降序）
-        List<RodeoEndGameInfoDto> forbiddenRanking = dtos.stream()
+        List<RodeoEndGameInfoDto> forbiddenRanking = dtoList.stream()
                 .sorted(Comparator.comparingInt(RodeoEndGameInfoDto::getForbiddenSpeech).reversed())
                 .toList();
 
@@ -176,11 +178,48 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
         try{
             cancelPermission(rodeo);
+
+            rankedFirst(scoreRanking, rodeo);
         }catch (Exception e){
 
         }finally {
             RodeoManager.removeEndRodeo(rodeo);
         }
+    }
+
+    private void rankedFirst(List<RodeoEndGameInfoDto> scoreRankingList, Rodeo rodeo) {
+
+        // 找到第一个有效分数（跳过-99分）
+        OptionalInt firstScoreOption= scoreRankingList.stream()
+                .filter(dto ->Objects.nonNull(dto.getScore()) && dto.getScore() != DEFAULT_SCORE)
+                .mapToInt(RodeoEndGameInfoDto::getScore)
+                .max();
+        if(firstScoreOption.isEmpty()){
+            Log.info("【大乱斗】-rankedFirst： 未找到第一名");
+            return;
+        }
+        int firstScore = firstScoreOption.getAsInt();
+        // 收集所有得分等于第一名的玩家
+        List<RodeoEndGameInfoDto> firstPlacePlayers = scoreRankingList.stream()
+                .filter(dto -> firstScore == dto.getScore() && dto.getScore() != DEFAULT_SCORE)
+                .toList();
+
+        if(CollectionUtil.isEmpty(firstPlacePlayers)){
+            Log.info("【轮盘】-rankedFirst： 筛选第一的分数： " + firstScore +" 数据长度为空");
+            return;
+        }
+
+        Message m = new PlainText(String.format("[%s]结束，恭喜第一名获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
+        int rank = 1;
+        for (RodeoEndGameInfoDto dto : firstPlacePlayers) {
+            m =  m.plus(rank++ + ".");
+            m = m.plus(new At(Long.parseLong(dto.getPlayer())));
+            m = m.plus(" - 获得道具: ");
+            m = m.plus(rodeo.getPropCode() + "\r\n");
+        }
+        Group group = getBotGroup(rodeo.getGroupId());
+        group.sendMessage(m);
+
     }
 
     @Override

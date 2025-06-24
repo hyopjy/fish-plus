@@ -3,9 +3,12 @@ package fish.plus.mirai.plugin.strategy;
 
 import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
-import net.mamoe.mirai.event.events.MessageEvent;
 
 public interface RodeoStrategy {
+
+    Double DEFAULT_PENALTY = -99.00;
+
+    int DEFAULT_SCORE = -99;
 
     /**
      * 开始
@@ -22,8 +25,6 @@ public interface RodeoStrategy {
      */
     public void endGame(Rodeo rodeo);
 
-    Rodeo checkOrderAndGetRodeo(MessageEvent event, String[] messageArr);
-
     /**
      * 解析消息
      *
@@ -35,4 +36,6 @@ public interface RodeoStrategy {
     void grantPermission(Rodeo rodeo);
 
     void cancelPermission(Rodeo rodeo);
+
+    void removeEndTask(Rodeo redeo);
 }

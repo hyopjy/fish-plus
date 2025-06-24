@@ -54,22 +54,14 @@ public class Rodeo implements Serializable {
 
     private int running;
 
+    // 奖励道具编码
+    private String propCode;
+
+    private String propName;
+
     public Rodeo() {
     }
 
-    public Rodeo(Long groupId, String venue,
-                 String day, String startTime, String endTime,
-                 String players, int round, String playingMethod, int running) {
-        this.groupId = groupId;
-        this.venue = venue;
-        this.day = day;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.players = players;
-        this.round = round;
-        this.playingMethod = playingMethod;
-        this.running = running;
-    }
 
     public boolean saveOrUpdate() {
         try {

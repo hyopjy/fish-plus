@@ -1,8 +1,10 @@
 package fish.plus.mirai.plugin.event;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.cron.CronUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import fish.plus.mirai.plugin.constants.Constant;
 import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
@@ -58,6 +60,7 @@ public class BotPostSendEventListener extends SimpleListenerHost {
         strategy.record(redeo, dto);
         if(RodeoManager.isDuelOver(redeo)){
             strategy.endGame(redeo);
+            strategy.removeEndTask(redeo);
             return;
         }
         System.out.println(code);

@@ -1,5 +1,7 @@
 package fish.plus.mirai.plugin.strategy.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.NumberUtil;
 import fish.plus.mirai.plugin.constants.Constant;
 import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.entity.rodeo.RodeoRecord;
@@ -8,6 +10,7 @@ import fish.plus.mirai.plugin.manager.RodeoManager;
 import fish.plus.mirai.plugin.obj.dto.PlayerStats;
 import fish.plus.mirai.plugin.obj.dto.RodeoEndGameInfoDto;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
+import fish.plus.mirai.plugin.util.Log;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Group;
 import cn.hutool.core.date.DatePattern;
@@ -115,9 +118,9 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
                                     .mapToInt(RodeoRecord::getForbiddenSpeech)
                                     .sum());
                             // 计算惩罚得分：禁言时长 ÷ 开枪总数（分母为0时计负分）
-                            stats.setScore((stats.getShotCount() > 0)
-                                    ? (double) stats.getTotalForbidden() / stats.getShotCount()
-                                    : -stats.getTotalForbidden());
+                            stats.setPenalty((stats.getShotCount() > 0)
+                                    ? NumberUtil.div(stats.getTotalForbidden(), stats.getShotCount())
+                                    : -99.00);
                             return stats;
                         })
                 ));
@@ -132,15 +135,17 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
             RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
             dto.setPlayer(player);
 
+            // Double penalty = -99.00 默认
             PlayerStats stats = playerStatsMap.getOrDefault(player, new PlayerStats());
-            dto.setPenalty(stats.getScore());           // 保留精确小数
+
+            dto.setPenalty(stats.getPenalty());           // 保留精确小数
             dto.setShotCount(stats.getShotCount());
             dto.setForbiddenSpeech(stats.getTotalForbidden());
             recordEndGameInfoDtos.add(dto);
         });
 
         // 按得分升序排序（0分排第一，负分随后）
-        recordEndGameInfoDtos.sort(Comparator.comparingDouble(RodeoEndGameInfoDto::getScore));
+        recordEndGameInfoDtos.sort(Comparator.comparingDouble(RodeoEndGameInfoDto::getPenalty));
 
         // 构建消息内容
 //        StringBuilder message = new StringBuilder("[" + rodeo.getVenue() + "]结束，排名如下：\n");
@@ -158,11 +163,50 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
 
         try {
             cancelPermission(rodeo);
+            // 根据 Penalty 排序
+            rankedFirst(recordEndGameInfoDtos, rodeo);
         } catch (Exception e) {
 
         } finally {
             RodeoManager.removeEndRodeo(rodeo);
         }
+    }
+
+
+    public void rankedFirst(List<RodeoEndGameInfoDto> rodeoEndGameInfo, Rodeo rodeo) {
+
+        OptionalDouble firstPenaltyOption = rodeoEndGameInfo.stream()
+                .filter(dto -> Objects.nonNull(dto.getPenalty()) && !dto.getPenalty().equals(DEFAULT_PENALTY))
+                .mapToDouble(RodeoEndGameInfoDto::getPenalty)
+                .max();
+
+        if(firstPenaltyOption.isEmpty()){
+            Log.info("【轮盘】-rankedFirst： 未找到第一名");
+            return;
+        }
+        Double firstPenalty = firstPenaltyOption.getAsDouble();
+        // 收集所有得分等于第一名的玩家
+        List<RodeoEndGameInfoDto> firstPlacePlayers = rodeoEndGameInfo.stream()
+                .filter(dto -> firstPenalty.equals(dto.getPenalty()) && !dto.getPenalty().equals(DEFAULT_PENALTY))
+                .toList();
+
+        if(CollectionUtil.isEmpty(firstPlacePlayers)){
+            Log.info("【轮盘】-rankedFirst： 筛选第一的分数： " + firstPenalty +" 数据长度为空");
+            return;
+        }
+
+        Message m = new PlainText(String.format("[%s]结束，恭喜第一名获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
+        int rank = 1;
+        for (RodeoEndGameInfoDto dto : firstPlacePlayers) {
+            m =  m.plus(rank++ + ".");
+            m = m.plus(new At(Long.parseLong(dto.getPlayer())));
+            m = m.plus(" - 获得道具: ");
+            m = m.plus(rodeo.getPropCode() + "\r\n");
+        }
+
+        Group group = getBotGroup(rodeo.getGroupId());
+        group.sendMessage(m);
+
     }
 
     @Override

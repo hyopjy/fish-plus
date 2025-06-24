@@ -16,7 +16,6 @@ import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.PlainText;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 /**
@@ -183,6 +182,13 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
 
         try{
             cancelPermission(rodeo);
+
+            // 赢家获取全能道具
+            Message m1 = new PlainText(String.format("[%s]结束，恭喜胜者获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
+            m1 = m1.plus(new At(winner));
+            m1 = m1.plus(" - 获得道具: ");
+            m1 = m1.plus(rodeo.getPropCode() + "\r\n");
+            group.sendMessage(m1);
         }catch (Exception e){
 
         }finally {
