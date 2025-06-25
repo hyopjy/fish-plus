@@ -48,6 +48,7 @@ public final class JavaPluginMain extends JavaPlugin {
         super(new JvmPluginDescriptionBuilder("fish.plus.mirai-plugin", "0.1.0")
                 .info("EG")
                 .dependsOn("com.evolvedghost.MuteGames", false)
+                .dependsOn("cn.chahuyun.HuYanSession", true)
                 .build());
     }
 
