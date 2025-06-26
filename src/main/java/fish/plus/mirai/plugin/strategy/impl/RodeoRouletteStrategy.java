@@ -195,18 +195,18 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
         }
 
         Message m = new PlainText(String.format("[%s]结束，恭喜第一名获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
+        List<Long> userIds = new ArrayList<>();
+
         int rank = 1;
         for (RodeoEndGameInfoDto dto : firstPlacePlayers) {
-
-//            // 创建并广播事件
-//            UserWinEvent event = new UserWinEvent(winner, rewardProp, rewardCount);
-//            GlobalEventChannel.INSTANCE.publish(event);
-
+            userIds.add(Long.parseLong(dto.getPlayer()));
             m =  m.plus(rank++ + ".");
             m = m.plus(new At(Long.parseLong(dto.getPlayer())));
             m = m.plus(" - 获得道具: ");
             m = m.plus(rodeo.getPropCode() + "\r\n");
         }
+
+        publishPropEvent(rodeo.getGroupId(), userIds, rodeo.getPropCode());
 
         Group group = getBotGroup(rodeo.getGroupId());
         group.sendMessage(m);

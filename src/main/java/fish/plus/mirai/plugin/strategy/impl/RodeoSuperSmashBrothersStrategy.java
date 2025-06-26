@@ -211,12 +211,16 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
         Message m = new PlainText(String.format("[%s]结束，恭喜第一名获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
         int rank = 1;
+        List<Long> userIds = new ArrayList<>();
         for (RodeoEndGameInfoDto dto : firstPlacePlayers) {
+            userIds.add(Long.parseLong(dto.getPlayer()));
             m =  m.plus(rank++ + ".");
             m = m.plus(new At(Long.parseLong(dto.getPlayer())));
             m = m.plus(" - 获得道具: ");
             m = m.plus(rodeo.getPropCode() + "\r\n");
         }
+        publishPropEvent(rodeo.getGroupId(), userIds, rodeo.getPropCode());
+
         Group group = getBotGroup(rodeo.getGroupId());
         group.sendMessage(m);
 

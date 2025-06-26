@@ -2,7 +2,6 @@ package fish.plus.mirai.plugin.strategy.impl;
 
 
 import cn.hutool.core.collection.CollectionUtil;
-import fish.plus.mirai.plugin.commonEvent.UserWinEvent;
 import fish.plus.mirai.plugin.constants.Constant;
 import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.entity.rodeo.RodeoRecord;
@@ -12,7 +11,6 @@ import fish.plus.mirai.plugin.manager.RodeoRecordManager;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Group;
-import net.mamoe.mirai.event.EventKt;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.PlainText;
@@ -192,10 +190,10 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
             m1 = m1.plus(rodeo.getPropCode() + "\r\n");
             group.sendMessage(m1);
 
+            List<Long> userIds = new ArrayList<>();
+            userIds.add(winner);
 
-            UserWinEvent event = new UserWinEvent("some action");
-            String finalAction = EventKt.broadcast(event).getAction();
-            System.out.println("action = " + finalAction);
+            publishPropEvent(rodeo.getGroupId(), userIds, rodeo.getPropCode());
         }catch (Exception e){
 
         }finally {
