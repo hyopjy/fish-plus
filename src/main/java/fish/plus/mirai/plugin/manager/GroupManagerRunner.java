@@ -19,6 +19,7 @@ public class GroupManagerRunner implements Runnable {
         List<Long> initGroupList = new ArrayList<>(2);
         initGroupList.add(758085692L);
         initGroupList.add(835186488L);
+        initGroupList.add(227265762L);
         initGroupList.forEach(g -> {
             Group group = JavaPluginMain.INSTANCE.getBotInstance().getGroup(g);
             if (Objects.nonNull(group)) {

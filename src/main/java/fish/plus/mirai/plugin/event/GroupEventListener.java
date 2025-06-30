@@ -1,14 +1,16 @@
 package fish.plus.mirai.plugin.event;
 
 import fish.plus.mirai.plugin.manager.RodeoManager;
-import fish.plus.mirai.plugin.strategy.RodeoFactory;
-import fish.plus.mirai.plugin.strategy.RodeoStrategy;
+import fish.plus.mirai.plugin.strategy.impl.RodeoAbstractStrategy;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.MessageEvent;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class GroupEventListener extends SimpleListenerHost {
@@ -28,6 +30,10 @@ public class GroupEventListener extends SimpleListenerHost {
         if ("开始比赛".equals(code)) {
             RodeoManager.init(group.getId());
 
+            List<Long> userIds = new ArrayList<>();
+            userIds.add(952746839L);
+
+            RodeoAbstractStrategy.publishPropEvent(227265762L, userIds, "FISH-108");
         }
 
     }

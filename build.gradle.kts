@@ -41,7 +41,6 @@ dependencies {
     // 若需要使用 Overflow 的接口，请取消注释下面这行
     // compileOnly("top.mrxiaom:overflow-core-api:$VERSION")
 // https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3
-    implementation("D:\\project\\private\\fish-plus\\lib\\HuYanEconomy-0.1.16.mirai2.jar")
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
     implementation( "org.projectlombok:lombok:1.18.24")
 //    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.24'
@@ -50,6 +49,8 @@ dependencies {
     implementation("org.apache.commons:commons-lang3:3.8.1")
     implementation("cn.chahuyun:hibernate-plus:1.0.16")
     testConsoleRuntime("top.mrxiaom.mirai:overflow-core:1.0.5")
+
+    implementation("com.alibaba.fastjson2:fastjson2-kotlin:2.0.45")
 //    implementation("com.fish:fish-common-api:1.0.2")
 
 

@@ -1,6 +1,8 @@
 package fish.plus.mirai.plugin.mqtt;
 
+import com.alibaba.fastjson2.JSONObject;
 import fish.plus.mirai.plugin.manager.RodeoManager;
+import fish.plus.mirai.plugin.obj.dto.MessageContentDTO;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.util.ArrayList;
@@ -77,10 +79,14 @@ public class MqttClientStart {
                     System.out.println("处理消息: " + messageStr);
                     
                     try {
-                        Long groupId = Long.parseLong(messageStr);
-                        System.out.println("解析群ID成功: " + groupId);
-                        RodeoManager.init(groupId);
-                        System.out.println("RodeoManager初始化完成");
+                        MessageContentDTO dto = JSONObject.parseObject(messageStr, MessageContentDTO.class);
+                        if("RODEO_INIT".equals(dto.getMessageType())){
+                            Long groupId = dto.getGroupId();
+                            System.out.println("解析群ID成功: " + groupId);
+                            RodeoManager.init(groupId);
+                            System.out.println("RodeoManager初始化完成");
+                        }
+
                     } catch (NumberFormatException e) {
                         System.err.println("消息格式错误，无法解析为群ID: " + messageStr);
                         System.err.println("错误详情: " + e.getMessage());
@@ -478,17 +484,31 @@ public class MqttClientStart {
     /**
      * 发送测试消息验证连接
      */
-    public void sendTestMessage() {
+//    public void sendTestMessage() {
+//        if (!isConnected()) {
+//            System.err.println("MQTT未连接，无法发送测试消息");
+//            return;
+//        }
+//
+//        try {
+//            publishMessage("test/topic", "Hello MQTT Test " + System.currentTimeMillis());
+//            System.out.println("测试消息发送成功");
+//        } catch (Exception e) {
+//            System.err.println("发送测试消息失败: " + e.getMessage());
+//        }
+//    }
+
+    public void sendMessage(String topic, String message) {
         if (!isConnected()) {
             System.err.println("MQTT未连接，无法发送测试消息");
             return;
         }
-        
+
         try {
-            publishMessage("test/topic", "Hello MQTT Test " + System.currentTimeMillis());
-            System.out.println("测试消息发送成功");
+            publishMessage(topic, message);
+            System.out.println("发送消息");
         } catch (Exception e) {
-            System.err.println("发送测试消息失败: " + e.getMessage());
+            System.err.println("发送消息失败: " + e.getMessage());
         }
     }
 

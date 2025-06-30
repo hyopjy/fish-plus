@@ -55,9 +55,9 @@ public class Rodeo implements Serializable {
     private int running;
 
     // 奖励道具编码
-    private String propCode;
+    private String propCode = "FISH-108";
 
-    private String propName;
+    private String propName = "全能道具";
 
     public Rodeo() {
     }

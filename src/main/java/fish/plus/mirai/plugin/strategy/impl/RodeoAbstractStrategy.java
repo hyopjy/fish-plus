@@ -2,10 +2,12 @@ package fish.plus.mirai.plugin.strategy.impl;
 
 
 import cn.hutool.cron.CronUtil;
+import com.alibaba.fastjson2.JSONObject;
 import fish.plus.mirai.plugin.JavaPluginMain;
-import fish.plus.mirai.plugin.commonEvent.UserWinEvent;
 import fish.plus.mirai.plugin.constants.Constant;
 import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
+import fish.plus.mirai.plugin.mqtt.MqttClientStart;
+import fish.plus.mirai.plugin.obj.dto.MessageContentUserWinEventDTO;
 import fish.plus.mirai.plugin.strategy.RodeoStrategy;
 import fish.plus.mirai.plugin.util.Log;
 import net.mamoe.mirai.Bot;
@@ -32,11 +34,14 @@ public abstract class RodeoAbstractStrategy implements RodeoStrategy {
         CronUtil.remove(endCronKey);
     }
 
-    public void publishPropEvent(Long groupId, List<Long> userIds, String propCode){
+    public static void publishPropEvent(Long groupId, List<Long> userIds, String propCode){
         CompletableFuture.runAsync(() -> {
-            UserWinEvent event = new UserWinEvent("GIVE_PROP", groupId, userIds, propCode);
-            String finalAction = EventKt.broadcast(event).getAction();
-            System.out.println("action = " + finalAction);
+            MessageContentUserWinEventDTO dto = new MessageContentUserWinEventDTO();
+            dto.setMessageType("USER_WIN_EVENT");
+            dto.setGroupId(groupId);
+            dto.setUserIds(userIds);
+            dto.setPropCode(propCode);
+            MqttClientStart.getInstance().sendMessage("economy/" + groupId, JSONObject.toJSONString(dto));
         });
 
     }
