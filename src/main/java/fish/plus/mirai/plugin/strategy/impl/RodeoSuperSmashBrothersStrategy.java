@@ -114,6 +114,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
         // 按玩家分组记录
         Map<String, List<RodeoRecord>> recordsByPlayer = records.stream()
+                .filter(obj-> Objects.nonNull(obj) && Objects.nonNull(obj.getPlayer()))
                 .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
 
         // 获取所有参赛者列表
