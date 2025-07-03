@@ -182,20 +182,19 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         // 发送消息
         group.sendMessage(m);
 
-        // 赢家获取全能道具
-        Message m1 = new PlainText(String.format("[%s]结束，恭喜胜者获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
-        m1 = m1.plus(new At(winner));
-        m1 = m1.plus(" - 获得道具: ");
-        m1 = m1.plus(rodeo.getPropCode() + "\r\n");
-        group.sendMessage(m1);
-
 
         if(rodeo.getGiveProp()){
+            // 赢家获取全能道具
+            Message m1 = new PlainText(String.format("[%s]结束，恭喜胜者获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
+            m1 = m1.plus(new At(winner));
+            m1 = m1.plus(" - 获得道具: ");
+            m1 = m1.plus(rodeo.getPropCode() + "\r\n");
+            group.sendMessage(m1);
+
             List<Long> userIds = new ArrayList<>();
             userIds.add(winner);
             publishPropEvent(rodeo.getGroupId(), userIds, rodeo.getPropCode());
         }
-
         cancelGame(rodeo);
     }
 
