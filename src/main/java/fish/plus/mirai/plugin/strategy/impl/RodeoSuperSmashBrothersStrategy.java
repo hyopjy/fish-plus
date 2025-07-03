@@ -149,7 +149,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
             dto.setForbiddenSpeech(totalForbidden);
 
             // 计算积分：得分 - 禁言时长/90（整数除法）
-            int integral = winCount - (totalForbidden / 90);
+            int integral = winCount - (totalForbidden / 45);
             dto.setIntegral(integral);  // 需要给DTO添加integral字段
 
             dtoList.add(dto);
@@ -161,7 +161,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
                 .toList();
 
         // 构建消息内容
-        Message m = new PlainText(String.format("[%s]结束，比赛结束\r\n \uD83C\uDFC6  积分排行榜：\r\n", rodeo.getVenue()));
+        Message m = new PlainText(String.format("[%s]结束，比赛结束，排名如下：\r\n", rodeo.getVenue()));
 
         int currentRank = 1;  // 当前显示的名次
         Integer lastIntegral = null;  // 上一个玩家的积分
@@ -187,7 +187,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         // 发送消息
         group.sendMessage(m);
         // 给第一名奖励
-        if(rodeo.getGiveProp()){
+        if(1 == rodeo.getGiveProp()){
             rankedFirst(integralRanking, rodeo);
         }
 

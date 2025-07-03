@@ -54,7 +54,7 @@ public class Rodeo implements Serializable {
 
     private int running;
 
-    private Boolean giveProp;
+    private int giveProp;
 
     // 奖励道具编码
     private String propCode;

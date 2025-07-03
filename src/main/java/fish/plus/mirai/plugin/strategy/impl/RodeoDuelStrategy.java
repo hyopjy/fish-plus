@@ -41,30 +41,28 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         if(group == null){
             return;
         }
-//        【
+//
+//        开场播报里需要加个赛制
+//
 //        东风吹，战鼓擂，决斗场上怕过谁！
-//        新的🏟[比赛场次名]已确定于[14:00-17:00]开战！
-//        [@A ]与[@B ]正式展开决斗的巅峰对决！⚔[N]局比赛，谁将笑傲鱼塘🤺，谁又将菜然神伤🥬？
-//        】
+//        新的🏟[大波测试赛决斗第一场02]BO5已确定于[18:02:00-18:20:00]开战！
+//        @首届决斗大赛禁言冠军 VS @屁屁
 
-        String messageFormat1 = "\r\n东风吹，战鼓擂，决斗场上怕过谁！ \r\n 新的🏟[%s]已确定于[%s-%s]开战！ \r\n";
-        String messageFormat2 = "\r\n正式展开决斗的巅峰对决！⚔[%s]局比赛，谁将笑傲鱼塘🤺，谁又将菜然神伤🥬？\r\n";
+        String roundStr = rodeo.getRound() >=10 ? rodeo.getRound()+"" : "0"+rodeo.getRound();
+
+        String messageFormat1 = "\r\n东风吹，战鼓擂，决斗场上怕过谁！ \r\n 新的🏟[%s] B%s 已确定于[%s-%s]开战！ \r\n";
 
         String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
         long player1 = Long.parseLong(players[0]);
         long player2 = Long.parseLong(players[1]);
 
-        String message1 = String.format(messageFormat1, rodeo.getVenue(), rodeo.getStartTime(),
+        String message1 = String.format(messageFormat1, rodeo.getVenue(), roundStr, rodeo.getStartTime(),
                 rodeo.getEndTime());
-
-        String message2 = String.format(messageFormat2, rodeo.getRound());
-
 
         Message m = new PlainText(message1);
         m = m.plus(new At(player1));
         m = m.plus(" VS ");
         m = m.plus(new At(player2));
-        m.plus(message2);
         group.sendMessage(m);
 
     }
@@ -183,7 +181,7 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         group.sendMessage(m);
 
 
-        if(rodeo.getGiveProp()){
+        if(1 == rodeo.getGiveProp()){
             // 赢家获取全能道具
             Message m1 = new PlainText(String.format("[%s]结束，恭喜胜者获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
             m1 = m1.plus(new At(winner));

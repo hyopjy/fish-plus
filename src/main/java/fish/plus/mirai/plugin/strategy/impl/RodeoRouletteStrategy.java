@@ -147,21 +147,20 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
         recordEndGameInfoDtos.sort(Comparator.comparingDouble(RodeoEndGameInfoDto::getPenalty).reversed());
 
         // 构建消息内容
-//        StringBuilder message = new StringBuilder("[" + rodeo.getVenue() + "]结束，排名如下：\n");
         Message m = new PlainText(String.format("[%s]结束，排名如下\r\n", rodeo.getVenue()));
         int rank = 1;
         for (RodeoEndGameInfoDto dto : recordEndGameInfoDtos) {
-            m =  m.plus(rank++ + ".");
+            m = m.plus("    "+ rank++ + ".");
             m = m.plus(new At(Long.parseLong(dto.getPlayer())));
             m = m.plus(" - 得分: ");
             m = m.plus(String.format("%.1f", dto.getPenalty()));
-            m = m.plus(" (禁言总时长: "  + dto.getForbiddenSpeech() + "秒, 开枪次数: " + dto.getShotCount() + ") \r\n");
+            m = m.plus("(" + dto.getShotCount() + " 枪，" + dto.getForbiddenSpeech() + " 秒) \r\n");
         }
         // 发送消息
         group.sendMessage(m);
 
         // 根据 Penalty 排序
-        if(rodeo.getGiveProp()){
+        if(1 == rodeo.getGiveProp()){
             rankedFirst(recordEndGameInfoDtos, rodeo);
         }
         cancelGame(rodeo);
