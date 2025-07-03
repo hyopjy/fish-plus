@@ -8,10 +8,15 @@ public class RodeoEndGameInfoDto {
 
     private String player;
 
+     // 系统计算赢的场次
     private int score = RodeoStrategy.DEFAULT_SCORE;
-
+    // 禁言时长
     private int forbiddenSpeech;
 
+    //
+    private int integral;  // 积分值
+
+    // 轮盘使用的
     private Double penalty;
 
     private int shotCount = 0;

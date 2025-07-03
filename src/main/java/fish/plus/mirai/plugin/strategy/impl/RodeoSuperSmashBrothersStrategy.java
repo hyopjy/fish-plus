@@ -114,7 +114,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
         // 按玩家分组记录
         Map<String, List<RodeoRecord>> recordsByPlayer = records.stream()
-                .filter(obj-> Objects.nonNull(obj) && Objects.nonNull(obj.getPlayer()))
+                .filter(obj -> Objects.nonNull(obj) && Objects.nonNull(obj.getPlayer()))
                 .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
 
         // 获取所有参赛者列表
@@ -124,54 +124,64 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         List<RodeoEndGameInfoDto> dtoList = new ArrayList<>();
 
         // 遍历所有参赛者生成统计数据（包含无记录的玩家）
-        allPlayers.forEach(player -> {
+         allPlayers.forEach(player -> {
             List<RodeoRecord> playerRecords = recordsByPlayer.getOrDefault(player, Collections.emptyList());
 
             RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
             dto.setPlayer(player);
-            if(!CollectionUtil.isEmpty(playerRecords)){
+
+            int winCount = 0;
+            int totalForbidden = 0;
+
+            if (!CollectionUtil.isEmpty(playerRecords)) {
                 // 计算获胜次数（只统计winFlag=1的记录）
-                int winCount = (int) playerRecords.stream()
+                winCount = (int) playerRecords.stream()
                         .filter(r -> r.getWinFlag() == 1)
                         .count();
-                dto.setScore(winCount);
 
                 // 计算总禁言时长
-                int totalForbidden = playerRecords.stream()
+                totalForbidden = playerRecords.stream()
                         .mapToInt(RodeoRecord::getForbiddenSpeech)
                         .sum();
-                dto.setForbiddenSpeech(totalForbidden);
             }
+
+            dto.setScore(winCount);
+            dto.setForbiddenSpeech(totalForbidden);
+
+            // 计算积分：得分 - 禁言时长/90（整数除法）
+            int integral = winCount - (totalForbidden / 90);
+            dto.setIntegral(integral);  // 需要给DTO添加integral字段
+
             dtoList.add(dto);
         });
 
-        // 构建排行榜（按分数降序）
-        List<RodeoEndGameInfoDto> scoreRanking = dtoList.stream()
-                .sorted(Comparator.comparingInt(RodeoEndGameInfoDto::getScore).reversed())
-                .toList();
-
-        // 构建禁言榜（按时长降序）
-        List<RodeoEndGameInfoDto> forbiddenRanking = dtoList.stream()
-                .sorted(Comparator.comparingInt(RodeoEndGameInfoDto::getForbiddenSpeech).reversed())
+        // 按积分降序排序（积分相同则按原始顺序）
+        List<RodeoEndGameInfoDto> integralRanking = dtoList.stream()
+                .sorted(Comparator.comparingInt(RodeoEndGameInfoDto::getIntegral).reversed())
                 .toList();
 
         // 构建消息内容
-        Message m = new PlainText(String.format("[%s]结束，]比赛结束\r\n 🏆 得分排行榜： \r\n", rodeo.getVenue()));
+        Message m = new PlainText(String.format("[%s]结束，比赛结束\r\n \uD83C\uDFC6  积分排行榜：\r\n", rodeo.getVenue()));
 
-        for (int i = 0; i < scoreRanking.size(); i++) {
-            RodeoEndGameInfoDto dto = scoreRanking.get(i);
-            m = m.plus(i+1 + ".");
-            m = m.plus(new At(Long.parseLong(dto.getPlayer())));
-            m = m.plus(" - " + dto.getScore() + "分 \r\n");
-        }
+        int currentRank = 1;  // 当前显示的名次
+        Integer lastIntegral = null;  // 上一个玩家的积分
 
-        // 添加禁言排行榜
-       m = m.plus("\r\n🔇 禁言时长排行榜：\r\n");
-        for (int i = 0; i < forbiddenRanking.size(); i++) {
-            RodeoEndGameInfoDto dto = forbiddenRanking.get(i);
-            m = m.plus(i+1 + ".");
+        for (int i = 0; i < integralRanking.size(); i++) {
+            RodeoEndGameInfoDto dto = integralRanking.get(i);
+
+            // 处理并列排名：积分相同则名次不变
+            if (lastIntegral != null && !lastIntegral.equals(dto.getIntegral())) {
+                currentRank = i + 1;  // 积分不同时更新名次
+            }
+            lastIntegral = dto.getIntegral();
+
+            // 拼接排名信息
+            m = m.plus(currentRank + ".");
             m = m.plus(new At(Long.parseLong(dto.getPlayer())));
-            m = m.plus(" - " + dto.getForbiddenSpeech() + "秒 \r\n");
+            m = m.plus(String.format(" - %d分（%d分，%d秒）\r\n",
+                    dto.getIntegral(),
+                    dto.getScore(),
+                    dto.getForbiddenSpeech()));
         }
 
         // 发送消息
@@ -179,8 +189,10 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
         try{
             cancelPermission(rodeo);
-
-            rankedFirst(scoreRanking, rodeo);
+            // 给第一名奖励
+            if(rodeo.getGiveProp()){
+                rankedFirst(integralRanking, rodeo);
+            }
         }catch (Exception e){
 
         }finally {
@@ -188,29 +200,31 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         }
     }
 
-    private void rankedFirst(List<RodeoEndGameInfoDto> scoreRankingList, Rodeo rodeo) {
+    private void rankedFirst(List<RodeoEndGameInfoDto> integralRanking, Rodeo rodeo) {
 
         // 找到第一个有效分数（跳过-99分）
-        OptionalInt firstScoreOption= scoreRankingList.stream()
-                .filter(dto ->Objects.nonNull(dto.getScore()) && dto.getScore() != DEFAULT_SCORE)
-                .mapToInt(RodeoEndGameInfoDto::getScore)
-                .max();
-        if(firstScoreOption.isEmpty()){
-            Log.info("【大乱斗】-rankedFirst： 未找到第一名");
-            return;
-        }
-        int firstScore = firstScoreOption.getAsInt();
-        // 收集所有得分等于第一名的玩家
-        List<RodeoEndGameInfoDto> firstPlacePlayers = scoreRankingList.stream()
-                .filter(dto -> firstScore == dto.getScore() && dto.getScore() != DEFAULT_SCORE)
-                .toList();
+        // 找出所有第一名玩家
+        List<RodeoEndGameInfoDto> firstPlacePlayers = new ArrayList<>();
+        int topScore; // 初始化最高分为-1
 
+        if (!integralRanking.isEmpty()) {
+            topScore = integralRanking.get(0).getIntegral();  // 获取最高积分
+
+            // 只有最高分大于0时才添加第一名玩家
+            if (topScore > 0) {
+                firstPlacePlayers = integralRanking.stream()
+                        .filter(dto -> dto.getIntegral() == topScore)
+                        .collect(Collectors.toList());
+            }
+        } else {
+            topScore = -1;
+        }
         if(CollectionUtil.isEmpty(firstPlacePlayers)){
-            Log.info("【轮盘】-rankedFirst： 筛选第一的分数： " + firstScore +" 数据长度为空");
+            Log.info("【轮盘】-rankedFirst： 筛选第一的分数： " + topScore +" 数据长度为空");
             return;
         }
 
-        Message m = new PlainText(String.format("[%s]结束，恭喜第一名获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
+        Message m = new PlainText(String.format("[%s]结束，恭喜第一名获取道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
         int rank = 1;
         List<Long> userIds = new ArrayList<>();
         for (RodeoEndGameInfoDto dto : firstPlacePlayers) {

@@ -190,10 +190,13 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
             m1 = m1.plus(rodeo.getPropCode() + "\r\n");
             group.sendMessage(m1);
 
-            List<Long> userIds = new ArrayList<>();
-            userIds.add(winner);
 
-            publishPropEvent(rodeo.getGroupId(), userIds, rodeo.getPropCode());
+            if(rodeo.getGiveProp()){
+                List<Long> userIds = new ArrayList<>();
+                userIds.add(winner);
+                publishPropEvent(rodeo.getGroupId(), userIds, rodeo.getPropCode());
+            }
+
         }catch (Exception e){
 
         }finally {

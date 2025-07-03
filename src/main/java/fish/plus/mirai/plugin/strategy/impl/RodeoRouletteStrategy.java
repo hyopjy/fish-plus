@@ -163,7 +163,10 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
         try {
             cancelPermission(rodeo);
             // 根据 Penalty 排序
-            rankedFirst(recordEndGameInfoDtos, rodeo);
+            if(rodeo.getGiveProp()){
+                rankedFirst(recordEndGameInfoDtos, rodeo);
+            }
+
         } catch (Exception e) {
 
         } finally {
