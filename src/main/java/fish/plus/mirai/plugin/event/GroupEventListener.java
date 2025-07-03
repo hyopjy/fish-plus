@@ -28,9 +28,7 @@ public class GroupEventListener extends SimpleListenerHost {
 //        }
         String code = event.getMessage().serializeToMiraiCode();
         if ("开始比赛".equals(code)) {
-            RodeoManager.init(group.getId());
-
-            List<Long> userIds = new ArrayList<>();
+           List<Long> userIds = new ArrayList<>();
             userIds.add(952746839L);
 
             RodeoAbstractStrategy.publishPropEvent(227265762L, userIds, "FISH-108");
