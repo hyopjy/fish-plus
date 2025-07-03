@@ -144,7 +144,7 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
         });
 
         // 按得分升序排序（0分排第一，负分随后）
-        recordEndGameInfoDtos.sort(Comparator.comparingDouble(RodeoEndGameInfoDto::getPenalty));
+        recordEndGameInfoDtos.sort(Comparator.comparingDouble(RodeoEndGameInfoDto::getPenalty).reversed());
 
         // 构建消息内容
 //        StringBuilder message = new StringBuilder("[" + rodeo.getVenue() + "]结束，排名如下：\n");
