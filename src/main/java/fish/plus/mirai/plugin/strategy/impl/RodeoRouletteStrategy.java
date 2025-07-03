@@ -160,16 +160,18 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
         // 发送消息
         group.sendMessage(m);
 
-        try {
+        // 根据 Penalty 排序
+        if(rodeo.getGiveProp()){
+            rankedFirst(recordEndGameInfoDtos, rodeo);
+        }
+        cancelGame(rodeo);
+    }
+
+    public void cancelGame(Rodeo rodeo){
+        try{
             cancelPermission(rodeo);
-            // 根据 Penalty 排序
-            if(rodeo.getGiveProp()){
-                rankedFirst(recordEndGameInfoDtos, rodeo);
-            }
-
-        } catch (Exception e) {
-
-        } finally {
+        }catch (Exception e){
+        }finally {
             RodeoManager.removeEndRodeo(rodeo);
         }
     }

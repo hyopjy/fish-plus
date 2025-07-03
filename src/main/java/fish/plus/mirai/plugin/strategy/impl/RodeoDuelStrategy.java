@@ -125,15 +125,17 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         Long player1 = Long.parseLong(players[0]);
         Long player2 = Long.parseLong(players[1]);
 
-// 获取当前赛事的所有记录
+        // 获取当前赛事的所有记录
         List<RodeoRecord> records = RodeoRecordManager.getRecordsByRodeoId(rodeoId);
 
-// 如果没有比赛记录，则直接返回未进行比赛的消息
+        // 如果没有比赛记录，则直接返回未进行比赛的消息
         if (CollectionUtil.isEmpty(records)) {
             String messageFormat = "\r\n %s,%s,%s未进行任何比赛 \r\n";
             String message = String.format(messageFormat, rodeo.getVenue(),
                     new At(player1).getDisplay(group), new At(player2).getDisplay(group));
             group.sendMessage(new PlainText(message));
+
+            cancelGame(rodeo);
             return;
         }
 
@@ -180,25 +182,27 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
         // 发送消息
         group.sendMessage(m);
 
+        // 赢家获取全能道具
+        Message m1 = new PlainText(String.format("[%s]结束，恭喜胜者获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
+        m1 = m1.plus(new At(winner));
+        m1 = m1.plus(" - 获得道具: ");
+        m1 = m1.plus(rodeo.getPropCode() + "\r\n");
+        group.sendMessage(m1);
+
+
+        if(rodeo.getGiveProp()){
+            List<Long> userIds = new ArrayList<>();
+            userIds.add(winner);
+            publishPropEvent(rodeo.getGroupId(), userIds, rodeo.getPropCode());
+        }
+
+        cancelGame(rodeo);
+    }
+
+    public void cancelGame(Rodeo rodeo){
         try{
             cancelPermission(rodeo);
-
-            // 赢家获取全能道具
-            Message m1 = new PlainText(String.format("[%s]结束，恭喜胜者获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
-            m1 = m1.plus(new At(winner));
-            m1 = m1.plus(" - 获得道具: ");
-            m1 = m1.plus(rodeo.getPropCode() + "\r\n");
-            group.sendMessage(m1);
-
-
-            if(rodeo.getGiveProp()){
-                List<Long> userIds = new ArrayList<>();
-                userIds.add(winner);
-                publishPropEvent(rodeo.getGroupId(), userIds, rodeo.getPropCode());
-            }
-
         }catch (Exception e){
-
         }finally {
             RodeoManager.removeEndRodeo(rodeo);
         }

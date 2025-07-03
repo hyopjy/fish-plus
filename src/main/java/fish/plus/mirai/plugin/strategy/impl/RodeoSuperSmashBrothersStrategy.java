@@ -186,19 +186,23 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
         // 发送消息
         group.sendMessage(m);
+        // 给第一名奖励
+        if(rodeo.getGiveProp()){
+            rankedFirst(integralRanking, rodeo);
+        }
 
+        cancelGame(rodeo);
+    }
+
+    public void cancelGame(Rodeo rodeo){
         try{
             cancelPermission(rodeo);
-            // 给第一名奖励
-            if(rodeo.getGiveProp()){
-                rankedFirst(integralRanking, rodeo);
-            }
         }catch (Exception e){
-
         }finally {
             RodeoManager.removeEndRodeo(rodeo);
         }
     }
+
 
     private void rankedFirst(List<RodeoEndGameInfoDto> integralRanking, Rodeo rodeo) {
 
