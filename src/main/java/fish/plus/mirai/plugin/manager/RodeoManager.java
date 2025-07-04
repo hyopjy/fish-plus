@@ -183,14 +183,7 @@ public class RodeoManager {
     public static void init(Long id){
         // 删除结束时间小于当前时间的数据
         removeExpRodeoList(id);
-        if(Objects.nonNull(id)){
-            Set<String> keys = CURRENT_SPORTS.keySet();
-            for (String key : keys) {
-                if(key.startsWith(id+"")){
-                    CURRENT_SPORTS.remove(key);
-                }
-            }
-        }else {
+        if(Objects.isNull(id)){
             CURRENT_SPORTS.clear();
         }
         // 启动有效的任务
@@ -216,7 +209,17 @@ public class RodeoManager {
         List<RodeoRecord> records = RodeoRecordManager.getRodeoRecordByRodeoIds(rodeoIds);
 
         records.forEach(RodeoRecord::remove);
-        expRodeo.forEach(Rodeo::remove);
+
+        Set<String> keys = CURRENT_SPORTS.keySet();
+
+        expRodeo.forEach(re->{
+            for (String key : keys) {
+                if (key.startsWith(re.getGroupId() + "_")) {
+                    CURRENT_SPORTS.remove(key);
+                }
+            }
+            re.remove();
+        });
     }
 
     public static void removeEndRodeo(Rodeo rodeo) {
@@ -241,6 +244,12 @@ public class RodeoManager {
     public static void removeTask(Rodeo rodeo){
         if(Objects.isNull(rodeo)){
             return;
+        }
+        Set<String> keys = CURRENT_SPORTS.keySet();
+        for (String key : keys) {
+            if (key.startsWith(rodeo.getGroupId() + "_")) {
+                CURRENT_SPORTS.remove(key);
+            }
         }
         String startCronKey = rodeo.getGroupId() + "_" + rodeo.getId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
         String endCronKey = rodeo.getGroupId() + "_" + rodeo.getId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
