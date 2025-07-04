@@ -89,7 +89,7 @@ public class MqttClientStart {
                             Long groupId = dto.getGroupId();
                             Long rodeoId = dto.getRodeoId();
                             System.out.println("解析群ID成功: " + groupId + "解析rodeoId: " + rodeoId);
-                            RodeoManager.init(rodeoId);
+                            RodeoManager.runRodeoId(rodeoId);
                             System.out.println("RodeoManager初始化完成");
                         }
                         if("RODEO_STOP".equals(dto.getMessageType())){

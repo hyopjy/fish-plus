@@ -180,21 +180,37 @@ public class RodeoManager {
         return true; // 时间段无交叉
     }
 
-    public static void init(Long id){
+    public static void init(){
         // 删除结束时间小于当前时间的数据
-        removeExpRodeoList(id);
-        if(Objects.isNull(id)){
-            CURRENT_SPORTS.clear();
-        }
+        removeExpRodeoList();
+        CURRENT_SPORTS.clear();
         // 启动有效的任务
-        List<Rodeo> list = getRodeoList(id);
+        List<Rodeo> list = getRodeoList();
         list.forEach(RodeoManager::removeTask);
         list.forEach(RodeoManager::runTask);
     }
 
-    public static void removeExpRodeoList(Long id) {
+    public static void runRodeoId(Long id){
+        // 启动有效的任务
+        Rodeo rodeo = getRodeoById(id);
+        removeTask(rodeo);
+
+        String endTime = rodeo.getDay() + " " +rodeo.getEndTime();
+        // 17.05
+        LocalDateTime end = LocalDateTime.parse(endTime, Constant.FORMATTER);
+        if (end.isBefore(LocalDateTime.now())) {
+            rodeo.remove();
+            return;
+        }
+        runTask(rodeo);
+//        list.forEach(RodeoManager::removeTask);
+//        list.forEach(RodeoManager::runTask);
+    }
+
+
+    public static void removeExpRodeoList() {
         LocalDateTime now = LocalDateTime.now();
-        List<Rodeo> list = getRodeoList(id);
+        List<Rodeo> list = getRodeoList();
         List<Rodeo> expRodeo = list.stream().map(l -> {
             String endTime = l.getDay() + " " + l.getEndTime();
             // 17.05
@@ -207,19 +223,8 @@ public class RodeoManager {
 
         List<Long> rodeoIds = expRodeo.stream().map(Rodeo::getId).collect(Collectors.toList());
         List<RodeoRecord> records = RodeoRecordManager.getRodeoRecordByRodeoIds(rodeoIds);
-
         records.forEach(RodeoRecord::remove);
-
-        Set<String> keys = CURRENT_SPORTS.keySet();
-
-        expRodeo.forEach(re->{
-            for (String key : keys) {
-                if (key.startsWith(re.getGroupId() + "_")) {
-                    CURRENT_SPORTS.remove(key);
-                }
-            }
-            re.remove();
-        });
+        expRodeo.forEach(Rodeo::remove);
     }
 
     public static void removeEndRodeo(Rodeo rodeo) {
@@ -231,14 +236,15 @@ public class RodeoManager {
     }
 
 
-    public static List<Rodeo> getRodeoList(Long id){
-        Map<String, Object> params = new HashMap<>();
-        if(Objects.nonNull(id)){
-            params.put("id", id);
-            return  HibernateFactory.selectList(Rodeo.class, params);
-        }
+    public static List<Rodeo> getRodeoList(){
         return HibernateFactory.selectList(Rodeo.class);
     }
+
+    public static Rodeo getRodeoById(Long Id){
+//        return HibernateFactory.selectList(Rodeo.class);
+        return null;
+    }
+
 
 
     public static void removeTask(Rodeo rodeo){
@@ -265,7 +271,6 @@ public class RodeoManager {
         if(Objects.isNull(rodeo)){
             return;
         }
-
         // String date = "2024-08-06";
         // String startTime = "12:00:00";
         // String endTime = "13:00:00";
