@@ -44,6 +44,9 @@ import java.util.List;
 public final class JavaPluginMain extends JavaPlugin {
     public static final JavaPluginMain INSTANCE = new JavaPluginMain();
 
+    public static String ServerIP = "127.0.0.1:1883";
+    public static String SERVER_DATA_SOURCE_IP = "127.0.0.1";
+
     private JavaPluginMain() {
         super(new JvmPluginDescriptionBuilder("fish.plus.mirai-plugin", "0.1.0")
                 .info("EG")
@@ -95,33 +98,17 @@ public final class JavaPluginMain extends JavaPlugin {
     @Override
     public void onEnable() {
         getLogger().info("日志");
-        CronUtil.start();
+        CronUtil.start(true);
+        CronUtil.setMatchSecond(true);
+
         //初始化插件数据库
         HibernateUtil.init(this);
 
         EventChannel<Event> eventChannel = GlobalEventChannel.INSTANCE.parentScope(this);
         eventChannel.registerListenerHost(new BotPostSendEventListener());
         eventChannel.registerListenerHost(new GroupEventListener());
-//        eventChannel.subscribeAlways(GroupMessageEvent.class, g -> {
-//            //监听群消息
-//            getLogger().info(g.getMessage().contentToString());
-//            MqttClientStart.getInstance().subscribeTopic("test/topic");
-//            MqttClientStart.getInstance().publishMessage("test/topic", g.getMessage().contentToString());
-//
-//        });
-//        eventChannel.subscribeAlways(FriendMessageEvent.class, f -> {
-//            //监听好友消息
-//            getLogger().info(f.getMessage().contentToString());
-//        });
 
         myCustomPermission.getValue(); // 注册权限
-//        GlobalEventChannel.INSTANCE.subscribeAlways(BotGroupPermissionChangeEvent.class, event -> {
-//            System.out.println("权限变更：" + event.getPermissionId() + " 状态：" + event.getType());
-//        });
-
-//        MqttClientStart mqttClientUtil = MqttClientStart.getInstance();
-//        mqttClientUtil.subscribeTopic("test/topic");
-//        mqttClientUtil.publishMessage("test/topic", "Hello MQTT!");
 
         // 初始化mqtt
         MqttClientStart mqttClient = MqttClientStart.getInstance();

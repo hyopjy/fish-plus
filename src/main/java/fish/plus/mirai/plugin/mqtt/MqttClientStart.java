@@ -10,8 +10,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static fish.plus.mirai.plugin.JavaPluginMain.ServerIP;
+
 public class MqttClientStart {
-    private static final String BROKER = "tcp://127.0.0.1:1883";
+//    private static final String BROKER = "tcp://47.121.130.134:1883";
+
+    private static final String BROKER = "tcp://" + ServerIP;
+
     private static final String CLIENT_ID = "JavaMqttClient";
     private static final List<String> SUBSCRIBED_TOPICS = new ArrayList<>();
     private static MqttClientStart instance;
@@ -82,8 +87,9 @@ public class MqttClientStart {
                         MessageContentDTO dto = JSONObject.parseObject(messageStr, MessageContentDTO.class);
                         if("RODEO_INIT".equals(dto.getMessageType())){
                             Long groupId = dto.getGroupId();
-                            System.out.println("解析群ID成功: " + groupId);
-                            RodeoManager.init(groupId);
+                            Long rodeoId = dto.getRodeoId();
+                            System.out.println("解析群ID成功: " + groupId + "解析rodeoId: " + rodeoId);
+                            RodeoManager.init(rodeoId);
                             System.out.println("RodeoManager初始化完成");
                         }
 

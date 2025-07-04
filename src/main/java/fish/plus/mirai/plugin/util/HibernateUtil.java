@@ -7,6 +7,8 @@ import fish.plus.mirai.plugin.JavaPluginMain;
 import org.hibernate.HibernateException;
 import org.hibernate.SessionFactory;
 
+import static fish.plus.mirai.plugin.JavaPluginMain.SERVER_DATA_SOURCE_IP;
+
 /**
  * 说明
  *
@@ -45,7 +47,7 @@ public class HibernateUtil {
         configuration.setFormatSql(false);
         try {
             configuration.setDriveType(DriveType.MYSQL);
-            configuration.setAddress("47.121.130.134/fish-plus");
+            configuration.setAddress(SERVER_DATA_SOURCE_IP + "/fish-plus");
             configuration.setUser("root");
             configuration.setPassword("zyjy110.");
             HibernatePlusService.loadingService(configuration);
