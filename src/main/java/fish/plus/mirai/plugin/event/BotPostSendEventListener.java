@@ -167,14 +167,23 @@ public class BotPostSendEventListener extends SimpleListenerHost {
     }
 
     // 万能时间解析（支持5种格式）
-    private int parseDuration(String text) {
-        // 格式1: "1分15秒" 格式2: "5秒" 格式3: "1分77秒" 格式4: "20秒" 格式5: "被禁言20秒"
-        Matcher m = Pattern.compile("(\\d+)[分]?(\\d*)[秒]").matcher(text);
+    public static int parseDuration(String text) {
+        // 优化正则：匹配三种格式 (X分Y秒、X分、Y秒)
+        Matcher m = Pattern.compile("(\\d+)分(\\d+)秒|(\\d+)分|(\\d+)秒").matcher(text);
         if (m.find()) {
-            int min = m.group(1) != null ? Integer.parseInt(m.group(1)) : 0;
-            int sec = !m.group(2).isEmpty() ? Integer.parseInt(m.group(2)) : 0;
-            return min * 60 + sec;
+            // 格式1: X分Y秒 (分组1和2)
+            if (m.group(1) != null && m.group(2) != null) {
+                return Integer.parseInt(m.group(1)) * 60 + Integer.parseInt(m.group(2));
+            }
+            // 格式2: X分 (分组3)
+            else if (m.group(3) != null) {
+                return Integer.parseInt(m.group(3)) * 60;
+            }
+            // 格式3: Y秒 (分组4)
+            else if (m.group(4) != null) {
+                return Integer.parseInt(m.group(4));
+            }
         }
-        return 0;  // 未找到时间
+        return 0;
     }
 }
