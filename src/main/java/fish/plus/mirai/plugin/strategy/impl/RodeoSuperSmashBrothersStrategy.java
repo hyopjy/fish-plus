@@ -194,6 +194,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         cancelGame(rodeo);
     }
 
+    @Override
     public void cancelGame(Rodeo rodeo){
         try{
             cancelPermission(rodeo);

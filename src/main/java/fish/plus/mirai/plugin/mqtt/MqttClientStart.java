@@ -92,6 +92,13 @@ public class MqttClientStart {
                             RodeoManager.init(rodeoId);
                             System.out.println("RodeoManager初始化完成");
                         }
+                        if("RODEO_STOP".equals(dto.getMessageType())){
+                            Long groupId = dto.getGroupId();
+                            Long rodeoId = dto.getRodeoId();
+                            System.out.println("解析群ID成功: " + groupId + "解析rodeoId: " + rodeoId);
+                            RodeoManager.stopGame(rodeoId);
+                            System.out.println("RodeoManager初始化完成");
+                        }
 
                     } catch (NumberFormatException e) {
                         System.err.println("消息格式错误，无法解析为群ID: " + messageStr);

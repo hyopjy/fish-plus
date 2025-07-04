@@ -10,6 +10,7 @@ import fish.plus.mirai.plugin.constants.Constant;
 import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.entity.rodeo.RodeoRecord;
 import fish.plus.mirai.plugin.strategy.RodeoFactory;
+import fish.plus.mirai.plugin.strategy.RodeoStrategy;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Group;
 
@@ -263,7 +264,7 @@ public class RodeoManager {
         String endCronExpression = getCronByDateAndTime(rodeo.getDay(), rodeo.getEndTime());
 
         // 开始任务
-        String startCronKey = rodeo.getGroupId()+"_"+ rodeo.getId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
+        String startCronKey = rodeo.getGroupId() + "_" + rodeo.getId() + Constant.SPILT + rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
         CronUtil.remove(startCronKey);
 
         // groupID_id|2024-08-23|15:18:00|14:38:00|934415751,952746839
@@ -335,5 +336,17 @@ public class RodeoManager {
         Map<String, Object> map = new HashMap<>();
         map.put("day", day);
         return HibernateFactory.selectList(Rodeo.class, map);
+    }
+
+    public static void stopGame(Long rodeoId) {
+        List<Rodeo> list = getRodeoList(rodeoId);
+        list.forEach(RodeoManager::removeTask);
+        list.forEach(redeo -> {
+            RodeoStrategy strategy = RodeoFactory.createRodeoDuelStrategy(redeo.getPlayingMethod());
+            strategy.cancelGame(redeo);
+            strategy.removeEndTask(redeo);
+        });
+
+
     }
 }

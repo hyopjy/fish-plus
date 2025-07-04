@@ -30,7 +30,7 @@ public abstract class RodeoAbstractStrategy implements RodeoStrategy {
     }
 
     public void removeEndTask(Rodeo rodeo){
-        String endCronKey = rodeo.getGroupId() + Constant.SPILT + rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
+        String endCronKey = rodeo.getGroupId() + "_" + rodeo.getId() + Constant.SPILT + rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
         CronUtil.remove(endCronKey);
     }
 

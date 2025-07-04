@@ -25,6 +25,9 @@ public interface RodeoStrategy {
      */
     public void endGame(Rodeo rodeo);
 
+    public void cancelGame(Rodeo rodeo);
+
+
     /**
      * 解析消息
      *
