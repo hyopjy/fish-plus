@@ -353,13 +353,13 @@ public class RodeoManager {
     }
 
     public static void stopGame(Long rodeoId) {
-        List<Rodeo> list = getRodeoList(rodeoId);
-        list.forEach(RodeoManager::removeTask);
-        list.forEach(redeo -> {
-            RodeoStrategy strategy = RodeoFactory.createRodeoDuelStrategy(redeo.getPlayingMethod());
-            strategy.cancelGame(redeo);
-            strategy.removeEndTask(redeo);
-        });
+        Rodeo redeo = getRodeoById(rodeoId);
+        removeTask(redeo);
+
+        RodeoStrategy strategy = RodeoFactory.createRodeoDuelStrategy(redeo.getPlayingMethod());
+        strategy.cancelGame(redeo);
+        strategy.removeEndTask(redeo);
+
 
 
     }
