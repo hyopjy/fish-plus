@@ -10,19 +10,15 @@ import java.util.Objects;
 
 public class RodeoEndTask implements Task {
 
-    private String cronKey;
 
     private Rodeo rodeo;
 
-    public RodeoEndTask(String cronKey, Rodeo rodeo) {
-        this.cronKey = cronKey;
+    public RodeoEndTask(Rodeo rodeo) {
         this.rodeo = rodeo;
     }
 
     @Override
     public void execute() {
-        // 获取比赛结果
-        RodeoManager.CURRENT_SPORTS.remove(cronKey, rodeo);
         RodeoStrategy strategy =  RodeoFactory.createRodeoDuelStrategy(rodeo.getPlayingMethod());
         if(Objects.isNull(strategy)){
             return;

@@ -55,12 +55,16 @@ public class BotPostSendEventListener extends SimpleListenerHost {
             System.out.println("如果用户没有正在进行的比赛*** " + event.getTarget().getId() + "====" + JSONUtil.toJsonStr(dto.getAtUser()));
             return;
         }
-        // 轮盘
+        if (RodeoManager.isDuelOver(redeo)) {
+            // 如果用户没有正在进行的比赛
+            System.out.println("决斗已经结束*** " + event.getTarget().getId() + "====" + JSONUtil.toJsonStr(dto.getAtUser()));
+            return;
+        }
+
         RodeoStrategy strategy =  RodeoFactory.createRodeoDuelStrategy(redeo.getPlayingMethod());
         strategy.record(redeo, dto);
         if(RodeoManager.isDuelOver(redeo)){
             strategy.endGame(redeo);
-            strategy.removeEndTask(redeo);
             return;
         }
         System.out.println(code);

@@ -52,7 +52,8 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
 
         String messageFormat1 = "\r\n东风吹，战鼓擂，决斗场上怕过谁！ \r\n 新的🏟[%s] B%s 已确定于[%s-%s]开战！ \r\n";
 
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] players = rodeo.getPlayerIds();
         long player1 = Long.parseLong(players[0]);
         long player2 = Long.parseLong(players[1]);
 
@@ -104,43 +105,30 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
 
     @Override
     public void endGame(Rodeo rodeo) {
-
-//            2.该场比赛结束后，统计双方的得分和总被禁言时长
-//【
-//        [比赛场次名]结束，恭喜胜者@B以[3:1]把对手@A鸡哔！🔫
-//    @B共被禁言[秒]
-//    @A共被禁言[秒]
-//    菜！就！多！练！
-//            】
         Group group = getBotGroup(rodeo.getGroupId());
         if(group == null){
             return;
         }
 
         Long rodeoId = rodeo.getId();
-        // 获取参赛玩家列表
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] players = rodeo.getPlayerIds();
         Long player1 = Long.parseLong(players[0]);
         Long player2 = Long.parseLong(players[1]);
 
-        // 获取当前赛事的所有记录
         List<RodeoRecord> records = RodeoRecordManager.getRecordsByRodeoId(rodeoId);
 
-        // 如果没有比赛记录，则直接返回未进行比赛的消息
         if (CollectionUtil.isEmpty(records)) {
-            String messageFormat = "\r\n %s,%s,%s未进行任何比赛 \r\n";
-            String message = String.format(messageFormat, rodeo.getVenue(),
-                    new At(player1).getDisplay(group), new At(player2).getDisplay(group));
+            String message = String.format("\r\n %s,%s,%s未进行任何比赛 \r\n",
+                    rodeo.getVenue(),
+                    new At(player1).getDisplay(group),
+                    new At(player2).getDisplay(group));
             group.sendMessage(new PlainText(message));
-
             cancelGame(rodeo);
             return;
         }
-
         // 初始化胜者和败者统计信息
-        Map<Long, Integer> winCountMap = new HashMap<>(); // 胜场次数统计
-        Map<Long, Long> forbiddenSpeechMap = new HashMap<>(); // 禁言时长统计
-
+        Map<Long, Integer> winCountMap = new HashMap<>();
+        Map<Long, Long> forbiddenSpeechMap = new HashMap<>();
         // 遍历所有比赛记录，统计胜场次数和禁言时长
         for (RodeoRecord record : records) {
             Long player = Long.parseLong(record.getPlayer());
@@ -151,48 +139,58 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
             forbiddenSpeechMap.put(player, forbiddenSpeechMap.getOrDefault(player, 0L) +
                     Optional.ofNullable(record.getForbiddenSpeech()).orElse(0));
         }
-
         // 获取两位玩家的胜场次数和禁言时长
         int p1WinCount = winCountMap.getOrDefault(player1, 0);
         int p2WinCount = winCountMap.getOrDefault(player2, 0);
         long p1ForbiddenTime = forbiddenSpeechMap.getOrDefault(player1, 0L);
         long p2ForbiddenTime = forbiddenSpeechMap.getOrDefault(player2, 0L);
 
-        // 判断胜者
-        Long winner = p1WinCount > p2WinCount ? player1 : player2;
-        Long loser = p1WinCount > p2WinCount ? player2 : player1;
+        // ========== 关键修改：增加平局判定 ==========
+        StringBuilder messageBuilder = new StringBuilder();
+        messageBuilder.append("\r\n").append(rodeo.getVenue()).append("结束，");
 
-        // 构建输出消息
-//        String messageFormat = "\r\n %s结束，恭喜胜者%s以[%d:%d]把对手%s鸡哔！🔫\r\n" ;
-//                "%s共被禁言%d 秒\r\n" +
-//                "%s共被禁言%d 秒\r\n" +
-//                "菜！就！多！练！ ";
-        Message m = new PlainText(String.format("\r\n %s结束，恭喜胜者", rodeo.getVenue()));
-        m = m.plus(new At(winner));
-        m = m.plus(String.format("以[%d:%d]把对手", p1WinCount, p2WinCount));
-        m = m.plus(new At(loser));
-        m = m.plus(" 鸡哔！🔫 \r\n");
-        m = m.plus(new At(player1));
-        m = m.plus(String.format("共被禁言%d 秒\r\n", p1ForbiddenTime));
-        m = m.plus(new At(player2));
-        m = m.plus(String.format("共被禁言%d 秒\r\n", p2ForbiddenTime));
-        m.plus("菜！就！多！练！ ");
-        // 发送消息
-        group.sendMessage(m);
+        if (p1WinCount == p2WinCount) {
+            // 平局消息格式
+            messageBuilder.append("双方以[")
+                    .append(p1WinCount).append(":").append(p2WinCount)
+                    .append("]战平！🤝\r\n");
+        } else {
+            // 胜负判定
+            Long winner = p1WinCount > p2WinCount ? player1 : player2;
+            Long loser = winner.equals(player1) ? player2 : player1;
 
-
-        if(1 == rodeo.getGiveProp()){
-            // 赢家获取全能道具
-            Message m1 = new PlainText(String.format("[%s]结束，恭喜胜者获取全能道具 🎁：%s \r\n", rodeo.getVenue(), rodeo.getPropName()));
-            m1 = m1.plus(new At(winner));
-            m1 = m1.plus(" - 获得道具: ");
-            m1 = m1.plus(rodeo.getPropCode() + "\r\n");
-            group.sendMessage(m1);
-
-            List<Long> userIds = new ArrayList<>();
-            userIds.add(winner);
-            publishPropEvent(rodeo.getGroupId(), userIds, rodeo.getPropCode());
+            messageBuilder.append("恭喜胜者")
+                    .append(new At(winner).getDisplay(group))
+                    .append("以[")
+                    .append(p1WinCount).append(":").append(p2WinCount)
+                    .append("]把对手")
+                    .append(new At(loser).getDisplay(group))
+                    .append("鸡哔！🔫\r\n");
         }
+
+        // 添加禁言信息（平局/胜负都显示）
+        messageBuilder.append(new At(player1).getDisplay(group))
+                .append("共被禁言").append(p1ForbiddenTime).append("秒\r\n")
+                .append(new At(player2).getDisplay(group))
+                .append("共被禁言").append(p2ForbiddenTime).append("秒\r\n")
+                .append("菜！就！多！练！");
+
+        group.sendMessage(new PlainText(messageBuilder.toString()));
+
+        // ========== 平局时不发放道具 ==========
+        if (p1WinCount != p2WinCount && rodeo.getGiveProp() == 1) {
+            Long winner = p1WinCount > p2WinCount ? player1 : player2;
+            StringBuilder propMsg = new StringBuilder();
+            propMsg.append("[").append(rodeo.getVenue()).append("]结束，恭喜胜者获取全能道具 🎁：")
+                    .append(rodeo.getPropName()).append(" \r\n")
+                    .append(new At(winner).getDisplay(group))
+                    .append(" - 获得道具: ")
+                    .append(rodeo.getPropCode()).append("\r\n");
+
+            group.sendMessage(new PlainText(propMsg.toString()));
+            publishPropEvent(rodeo.getGroupId(), Collections.singletonList(winner), rodeo.getPropCode());
+        }
+
         cancelGame(rodeo);
     }
 
@@ -202,18 +200,15 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
             cancelPermission(rodeo);
         }catch (Exception e){
         }finally {
+            RodeoManager.removeCron(rodeo);
             RodeoManager.removeEndRodeo(rodeo);
         }
     }
 
     @Override
-    public RodeoRecordGameInfoDto analyzeMessage(String message) {
-        return null;
-    }
-
-    @Override
     public void grantPermission(Rodeo rodeo) {
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] players = rodeo.getPlayerIds();
         for(String player: players){
             log.info("决斗授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.grantDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
@@ -222,7 +217,8 @@ public class RodeoDuelStrategy extends RodeoAbstractStrategy {
 
     @Override
     public void cancelPermission(Rodeo rodeo) {
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] players = rodeo.getPlayerIds();
         for(String player: players){
             log.info("决斗取消授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.revokeDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);

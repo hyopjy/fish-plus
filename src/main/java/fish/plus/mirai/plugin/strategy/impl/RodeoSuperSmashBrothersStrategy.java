@@ -54,11 +54,11 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
             return;
         }
 
-        String messageFormat1= "\r\n东风吹，战鼓擂，轮盘赛上怕过谁！ \r\n新的🏟[%s]正式开战！比赛时长[%s]，参赛选手有： \r\n";
+        String messageFormat1= "\r\n东风吹，战鼓擂，决斗赛上怕过谁！ \r\n新的🏟[%s]正式开战！比赛时长[%s]，参赛选手有： \r\n";
 
-        String messageFormat2= "\r\n 轮盘比赛正式打响！🔫[%s]的比赛，谁将笑傲鱼塘🤺，谁又将菜然神伤🥬？\r\n";
+        String messageFormat2= "\r\n 大乱斗比赛正式打响！🔫[%s]的比赛，谁将笑傲鱼塘🤺，谁又将菜然神伤🥬？\r\n";
 
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
 
         long playerTime = DateUtil.between(DateUtil.parse(rodeo.getStartTime(),
                 DatePattern.NORM_TIME_PATTERN), DateUtil.parse(rodeo.getEndTime(), DatePattern.NORM_TIME_PATTERN), DateUnit.MINUTE);
@@ -67,6 +67,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
         String message2 = String.format(messageFormat2, playerTime+"分钟");
 
         Message m = new PlainText(message1);
+        String[] players = rodeo.getPlayerIds();
         for(String str : players){
             long playerId = Long.parseLong(str);
             m = m.plus(new At(playerId));
@@ -118,7 +119,8 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
                 .collect(Collectors.groupingBy(RodeoRecord::getPlayer));
 
         // 获取所有参赛者列表
-        String[] playersArray = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] playersArray = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] playersArray = rodeo.getPlayerIds();
         List<String> allPlayers = Arrays.asList(playersArray);
 
         List<RodeoEndGameInfoDto> dtoList = new ArrayList<>();
@@ -130,7 +132,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
             RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
             dto.setPlayer(player);
 
-            int winCount = 0;
+            int winCount = -99999;
             int totalForbidden = 0;
 
             if (!CollectionUtil.isEmpty(playerRecords)) {
@@ -178,7 +180,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
             // 拼接排名信息
             m = m.plus(currentRank + ".");
             m = m.plus(new At(Long.parseLong(dto.getPlayer())));
-            m = m.plus(String.format(" - %d分（%d分，%d秒）\r\n",
+            m = m.plus(String.format("  %d分（%d分，%d秒）\r\n",
                     dto.getIntegral(),
                     dto.getScore(),
                     dto.getForbiddenSpeech()));
@@ -200,6 +202,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
             cancelPermission(rodeo);
         }catch (Exception e){
         }finally {
+            RodeoManager.removeCron(rodeo);
             RodeoManager.removeEndRodeo(rodeo);
         }
     }
@@ -247,13 +250,9 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
     }
 
     @Override
-    public RodeoRecordGameInfoDto analyzeMessage(String message) {
-        return null;
-    }
-
-    @Override
     public void grantPermission(Rodeo rodeo) {
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] players = rodeo.getPlayerIds();
         for(String player: players){
             log.info("大乱斗授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.grantDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);
@@ -262,7 +261,8 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
 
     @Override
     public void cancelPermission(Rodeo rodeo) {
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] players = rodeo.getPlayerIds();
         for(String player: players){
             log.info("大乱斗取消授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.revokeDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.DUEL_PERMISSION);

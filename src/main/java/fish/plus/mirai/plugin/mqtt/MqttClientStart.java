@@ -86,18 +86,19 @@ public class MqttClientStart {
                     try {
                         MessageContentDTO dto = JSONObject.parseObject(messageStr, MessageContentDTO.class);
                         if("RODEO_INIT".equals(dto.getMessageType())){
+                            // 启动和重开
                             Long groupId = dto.getGroupId();
                             Long rodeoId = dto.getRodeoId();
                             System.out.println("解析群ID成功: " + groupId + "解析rodeoId: " + rodeoId);
                             RodeoManager.runRodeoId(rodeoId);
-                            System.out.println("RodeoManager初始化完成");
+                            System.out.println("RodeoManager 启动和重开完成");
                         }
                         if("RODEO_STOP".equals(dto.getMessageType())){
                             Long groupId = dto.getGroupId();
                             Long rodeoId = dto.getRodeoId();
                             System.out.println("解析群ID成功: " + groupId + "解析rodeoId: " + rodeoId);
                             RodeoManager.stopGame(rodeoId);
-                            System.out.println("RodeoManager初始化完成");
+                            System.out.println("RodeoManager 停止");
                         }
 
                     } catch (NumberFormatException e) {

@@ -15,7 +15,7 @@ public interface Constant {
 
 
     DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
+    DateTimeFormatter FORMATTER_YYYY_MM_DD = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     String SPILT = "-";
 

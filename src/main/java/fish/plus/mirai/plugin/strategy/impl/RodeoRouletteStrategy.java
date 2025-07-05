@@ -51,7 +51,7 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
 
         String messageFormat2= "\r\n轮盘比赛正式打响！🔫[%s]的比赛，谁将笑傲鱼塘🤺，谁又将菜然神伤🥬？\r\n";
 
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
 
         long playerTime = DateUtil.between(DateUtil.parse(rodeo.getStartTime(),
                 DatePattern.NORM_TIME_PATTERN), DateUtil.parse(rodeo.getEndTime(), DatePattern.NORM_TIME_PATTERN), DateUnit.MINUTE);
@@ -60,6 +60,8 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
         String message2 = String.format(messageFormat2, playerTime+"分钟");
 
         Message m = new PlainText(message1);
+
+        String[] players = rodeo.getPlayerIds();
         for(String str : players){
             Long playerId = Long.parseLong(str);
             m = m.plus(new At(playerId));
@@ -119,13 +121,14 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
                             // 计算惩罚得分：禁言时长 ÷ 开枪总数（分母为0时计负分）
                             stats.setPenalty((stats.getShotCount() > 0)
                                     ? NumberUtil.div(stats.getTotalForbidden(), stats.getShotCount())
-                                    : -99.00);
+                                    : -99999.00);
                             return stats;
                         })
                 ));
 
         // 获取所有参赛者
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] players = rodeo.getPlayerIds();
         List<String> allPlayers = Arrays.asList(players);
 
         // 创建用于存储结果的DTO列表
@@ -172,6 +175,7 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
             cancelPermission(rodeo);
         }catch (Exception e){
         }finally {
+            RodeoManager.removeCron(rodeo);
             RodeoManager.removeEndRodeo(rodeo);
         }
     }
@@ -207,7 +211,7 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
             userIds.add(Long.parseLong(dto.getPlayer()));
             m =  m.plus(rank++ + ".");
             m = m.plus(new At(Long.parseLong(dto.getPlayer())));
-            m = m.plus(" - 获得道具: ");
+            m = m.plus("  获得道具: ");
             m = m.plus(rodeo.getPropCode() + "\r\n");
         }
 
@@ -219,13 +223,9 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
     }
 
     @Override
-    public RodeoRecordGameInfoDto analyzeMessage(String message) {
-        return null;
-    }
-
-    @Override
     public void grantPermission(Rodeo rodeo) {
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] players = rodeo.getPlayerIds();
         for(String player: players){
             log.info("轮盘授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.grantDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.ROULETTE_PERMISSION);
@@ -235,7 +235,8 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
 
     @Override
     public void cancelPermission(Rodeo rodeo) {
-        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+//        String[] players = rodeo.getPlayers().split(Constant.MM_SPILT);
+        String[] players = rodeo.getPlayerIds();
         for(String player: players){
             log.info("轮盘取消授权：groupId: {}, player：{}", rodeo.getGroupId(), player);
             PermissionManager.revokeDuelPermission(rodeo.getGroupId(), Long.parseLong(player), PermissionManager.ROULETTE_PERMISSION);

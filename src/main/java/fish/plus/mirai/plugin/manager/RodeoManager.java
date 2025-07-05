@@ -11,13 +11,15 @@ import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.entity.rodeo.RodeoRecord;
 import fish.plus.mirai.plugin.strategy.RodeoFactory;
 import fish.plus.mirai.plugin.strategy.RodeoStrategy;
+import jakarta.persistence.criteria.*;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Group;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -77,37 +79,51 @@ public class RodeoManager {
 //    @B共被禁言[秒]
 //    @C共被禁言[秒]
 //    @D共被禁言[秒]】
-    /**
-     * 正在进行的比赛
-     */
-    public static Map<String, Rodeo> CURRENT_SPORTS = new ConcurrentHashMap<>();
 
+    public static Rodeo getCurrent(long groupId, Set<Long> atUser) {
+        // 获取当前日期和时间
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+        String todayStr = today.format(Constant.FORMATTER_YYYY_MM_DD);
+        String nowStr = now.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
 
+        return HibernateFactory.getSession().fromSession(session -> {
+            CriteriaBuilder builder = session.getCriteriaBuilder();
+            CriteriaQuery<Rodeo> query = builder.createQuery(Rodeo.class);
+            Root<Rodeo> root = query.from(Rodeo.class);
 
-    public static Rodeo getCurrent(long groupId, Set<Long> atUser){
-        Set<String> keys = CURRENT_SPORTS.keySet();
-        for (String key : keys) {
-            if (key.startsWith(groupId + "_")) {
-                String[] taskKeyArr = key.split(Constant.SPILT2);
-                if(taskKeyArr.length != 5){
-                    return null;
-                }
-                String[] playersArr = taskKeyArr[4].split(Constant.MM_SPILT);
-                // 轮盘当前时段只有一个
-                // 决斗 当前两个用户只有一个
-                // todo 判断时间
-                // todo 判断用户
-                for(String p1: playersArr){
-                    if(atUser.contains(Long.parseLong(p1))){
-                        // 判断决斗胜负是否已经分出
-                        if (!RodeoManager.isDuelOver(CURRENT_SPORTS.get(key))) {
-                            return CURRENT_SPORTS.get(key);
-                        }
-                    }
+            // 创建主要条件列表
+            List<Predicate> predicates = new ArrayList<>();
+
+            // 基本条件：匹配群组ID和当天日期
+            predicates.add(builder.equal(root.get("groupId"), groupId));
+            predicates.add(builder.equal(root.get("day"), todayStr));
+            predicates.add(builder.equal(root.get("running"), 1)); // 运行状态为1
+            predicates.add(builder.lessThanOrEqualTo(root.get("startTime"), nowStr));
+            predicates.add(builder.greaterThanOrEqualTo(root.get("endTime"), nowStr));
+
+            // 玩家匹配条件（利用存储格式优势）
+            if (atUser != null && !atUser.isEmpty()) {
+                Expression<String> playersExpr = root.get("players");
+
+                for (Long userId : atUser) {
+                    // 直接匹配格式化的用户ID字符串
+                    String pattern = "%," + userId + ",%";
+                    predicates.add(builder.like(playersExpr, pattern));
                 }
             }
-        }
-        return null;
+
+            // 组合所有条件
+            query.where(builder.and(predicates.toArray(new Predicate[0])));
+
+            // 按开始时间倒序排序（获取最近的比赛）
+            query.orderBy(builder.desc(root.get("startTime")));
+
+            // 执行查询，只获取第一个结果
+            return session.createQuery(query)
+                    .setMaxResults(1)
+                    .uniqueResult();
+        });
     }
 
     /**
@@ -162,55 +178,41 @@ public class RodeoManager {
                 .anyMatch(entry -> entry.getValue().size() >= roundWinCount);
     }
 
-    //  判断存在的数据 时间是否有交叉
-    public static boolean checkDateAndTime(String day, String startTime, String endTime) {
-        List<Rodeo> exitsRodeo = getRodeoByDay(day);
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime newStart = LocalDateTime.parse(day + " " + startTime, formatter);
-        LocalDateTime newEnd = LocalDateTime.parse(day + " " + endTime, formatter);
-
-        for (Rodeo rodeo : exitsRodeo) {
-            LocalDateTime existingStart = LocalDateTime.parse(rodeo.getStartTime(), formatter);
-            LocalDateTime existingEnd = LocalDateTime.parse(rodeo.getEndTime(), formatter);
-            if (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)) {
-                return false; // 时间段有交叉
-            }
-        }
-        return true; // 时间段无交叉
-    }
-
     public static void init(){
         // 删除结束时间小于当前时间的数据
         removeExpRodeoList();
-        CURRENT_SPORTS.clear();
         // 启动有效的任务
-        List<Rodeo> list = getRodeoList();
-        list.forEach(RodeoManager::removeTask);
-        list.forEach(RodeoManager::runTask);
+        List<Rodeo> list = getRodeoList(1);
+        list.forEach(rodeo->{
+            RodeoStrategy strategy =  RodeoFactory.createRodeoDuelStrategy(rodeo.getPlayingMethod());
+            strategy.cancelPermissionAndDeleteCronTask(rodeo);
+            RodeoManager.runTask(rodeo);
+        });
     }
 
     public static void runRodeoId(Long id){
         // 启动有效的任务
         Rodeo rodeo = getRodeoById(id);
-        removeTask(rodeo);
-
+        if(Objects.isNull(rodeo)){
+            return;
+        }
+        //
+        RodeoStrategy strategy =  RodeoFactory.createRodeoDuelStrategy(rodeo.getPlayingMethod());
         String endTime = rodeo.getDay() + " " +rodeo.getEndTime();
         // 17.05
         LocalDateTime end = LocalDateTime.parse(endTime, Constant.FORMATTER);
         if (end.isBefore(LocalDateTime.now())) {
-            rodeo.remove();
+            strategy.cancelGame(rodeo);
             return;
         }
+        strategy.cancelPermissionAndDeleteCronTask(rodeo);
         runTask(rodeo);
-//        list.forEach(RodeoManager::removeTask);
-//        list.forEach(RodeoManager::runTask);
     }
 
 
     public static void removeExpRodeoList() {
         LocalDateTime now = LocalDateTime.now();
-        List<Rodeo> list = getRodeoList();
+        List<Rodeo> list = getRodeoList(null);
         List<Rodeo> expRodeo = list.stream().map(l -> {
             String endTime = l.getDay() + " " + l.getEndTime();
             // 17.05
@@ -224,8 +226,24 @@ public class RodeoManager {
         List<Long> rodeoIds = expRodeo.stream().map(Rodeo::getId).collect(Collectors.toList());
         List<RodeoRecord> records = RodeoRecordManager.getRodeoRecordByRodeoIds(rodeoIds);
         records.forEach(RodeoRecord::remove);
-        expRodeo.forEach(Rodeo::remove);
+
+//           *  取消权限
+//           *  删除定时
+//           *  删除游戏
+        expRodeo.forEach(rodeo->{
+            RodeoStrategy strategy =  RodeoFactory.createRodeoDuelStrategy(rodeo.getPlayingMethod());
+            strategy.cancelGame(rodeo);
+        });
+
     }
+
+    public static void removeCron(Rodeo rodeo){
+        String startCronKey = rodeo.getGroupId() + "_" + rodeo.getId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
+        String endCronKey = rodeo.getGroupId() + "_" + rodeo.getId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
+        CronUtil.remove(startCronKey);
+        CronUtil.remove(endCronKey);
+    }
+
 
     public static void removeEndRodeo(Rodeo rodeo) {
         List<Long> rodeoIds = Collections.singletonList(rodeo.getId());
@@ -236,35 +254,75 @@ public class RodeoManager {
     }
 
 
-    public static List<Rodeo> getRodeoList(){
-        return HibernateFactory.selectList(Rodeo.class);
+//    public static List<Rodeo> getRodeoList(Integer running){
+//        return HibernateFactory.selectList(Rodeo.class);
+//    }
+    /**
+     * 根据运行状态查询比赛列表
+     * @param running 运行状态 (1=运行中, 0=未运行, null=查询所有)
+     * @return 匹配的比赛列表
+     */
+    public static List<Rodeo> getRodeoList(Integer running) {
+        return HibernateFactory.getSession().fromSession(session -> {
+            CriteriaBuilder builder = session.getCriteriaBuilder();
+            CriteriaQuery<Rodeo> query = builder.createQuery(Rodeo.class);
+            Root<Rodeo> root = query.from(Rodeo.class);
+
+            // 添加条件（如果running不为null）
+            if (running != null) {
+                query.where(builder.equal(root.get("running"), running));
+            }
+
+            // 添加排序（按开始时间倒序）
+            query.orderBy(
+                    builder.desc(root.get("day")),
+                    builder.desc(root.get("startTime"))
+            );
+
+            return session.createQuery(query).list();
+        });
     }
 
     public static Rodeo getRodeoById(Long Id){
-//        return HibernateFactory.selectList(Rodeo.class);
-        return null;
+      return HibernateFactory.selectOne(Rodeo.class, Id);
     }
 
+//    public static Optional<RodeoRecord> getRodeoById(Long id) {
+//        return HibernateFactory.getSession().fromSession(session -> {
+//            CriteriaBuilder builder = session.getCriteriaBuilder();
+//            CriteriaQuery<RodeoRecord> query = builder.createQuery(RodeoRecord.class);
+//            Root<RodeoRecord> root = query.from(RodeoRecord.class);
+//
+//            query.where(builder.equal(root.get("rodeoId"), id));
+//
+//            RodeoRecord result = session.createQuery(query)
+//                    .setMaxResults(1)
+//                    .uniqueResult();
+//
+//            return Optional.ofNullable(result);
+//        });
+//    }
 
 
-    public static void removeTask(Rodeo rodeo){
-        if(Objects.isNull(rodeo)){
-            return;
-        }
-        Set<String> keys = CURRENT_SPORTS.keySet();
-        for (String key : keys) {
-            if (key.startsWith(rodeo.getGroupId() + "_")) {
-                CURRENT_SPORTS.remove(key);
-            }
-        }
-        String startCronKey = rodeo.getGroupId() + "_" + rodeo.getId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
-        String endCronKey = rodeo.getGroupId() + "_" + rodeo.getId() + Constant.SPILT +  rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
-        CronUtil.remove(startCronKey);
-        CronUtil.remove(endCronKey);
+    /**
+     * 取消授权
+     * 删除定时
+     * @param rodeo
+     */
 
-        rodeo.setRunning(0);
-        rodeo.saveOrUpdate();
-    }
+//    public static void cancelPermissonAndDeletCronTask(Rodeo rodeo){
+//        if(Objects.isNull(rodeo)){
+//            return;
+//        }
+//        // 取消授权
+//        // 删除定时
+//        RodeoStrategy strategy =  RodeoFactory.createRodeoDuelStrategy(rodeo.getPlayingMethod());
+//        strategy.cancelPermission(rodeo);
+//
+//        removeCron(rodeo);
+//        rodeo.setRunning(0);
+//        rodeo.saveOrUpdate();
+//    }
 
 
     public static void runTask(Rodeo rodeo) {
@@ -281,19 +339,13 @@ public class RodeoManager {
         String startCronKey = rodeo.getGroupId() + "_" + rodeo.getId() + Constant.SPILT + rodeo.getDay() + Constant.SPILT + rodeo.getStartTime();
         CronUtil.remove(startCronKey);
 
-        // groupID_id|2024-08-23|15:18:00|14:38:00|934415751,952746839
-        String taskKey = rodeo.getGroupId()+"_"+ rodeo.getId() + Constant.SPILT2
-                + rodeo.getDay() + Constant.SPILT2
-                + rodeo.getStartTime() + Constant.SPILT2
-                + rodeo.getEndTime() + Constant.SPILT2
-                + rodeo.getPlayers();
-        RodeoOpenTask startTask = new RodeoOpenTask(taskKey, rodeo);
+        RodeoOpenTask startTask = new RodeoOpenTask(rodeo);
         CronUtil.schedule(startCronKey, startCronExpression, startTask);
 
         // 结束任务
         String endCronKey = rodeo.getGroupId() + "_"+ rodeo.getId() + Constant.SPILT + rodeo.getDay() + Constant.SPILT + rodeo.getEndTime();
         CronUtil.remove(endCronKey);
-        RodeoEndTask endTask = new RodeoEndTask(taskKey, rodeo);
+        RodeoEndTask endTask = new RodeoEndTask(rodeo);
         CronUtil.schedule(endCronKey, endCronExpression, endTask);
 
         LocalDateTime dateTime = LocalDateTime.parse(rodeo.getDay() + " " + rodeo.getStartTime(), Constant.FORMATTER);
@@ -353,14 +405,18 @@ public class RodeoManager {
     }
 
     public static void stopGame(Long rodeoId) {
-        Rodeo redeo = getRodeoById(rodeoId);
-        removeTask(redeo);
-
-        RodeoStrategy strategy = RodeoFactory.createRodeoDuelStrategy(redeo.getPlayingMethod());
-        strategy.cancelGame(redeo);
-        strategy.removeEndTask(redeo);
-
-
+        Rodeo rodeo = getRodeoById(rodeoId);
+        if(Objects.isNull(rodeo)){
+            return;
+        }
+        RodeoStrategy strategy = RodeoFactory.createRodeoDuelStrategy(rodeo.getPlayingMethod());
+        strategy.cancelGame(rodeo);
+        if(Objects.nonNull(JavaPluginMain.INSTANCE.getBotInstance())){
+            Group group = JavaPluginMain.INSTANCE.getBotInstance().getGroup(rodeo.getGroupId());
+            if(Objects.nonNull(group)){
+                group.sendMessage(rodeo.getVenue()+"("+ rodeo.getPlayingMethod() +") 结束 🎮🔚");
+            }
+        }
 
     }
 }

@@ -137,7 +137,7 @@ public final class JavaPluginMain extends JavaPlugin {
             Log.info("MQTT连接超时，但继续启动其他组件");
         }
 
-        RodeoManager.init(null);
+        RodeoManager.init();
         
         // 启动GroupManagerRunner线程并保存引用
         groupManagerRunner = new GroupManagerRunner();

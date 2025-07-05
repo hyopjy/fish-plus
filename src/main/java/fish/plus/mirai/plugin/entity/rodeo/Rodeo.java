@@ -2,12 +2,16 @@ package fish.plus.mirai.plugin.entity.rodeo;
 
 
 import cn.chahuyun.hibernateplus.HibernateFactory;
+import fish.plus.mirai.plugin.constants.Constant;
 import fish.plus.mirai.plugin.util.Log;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
+import java.util.Arrays;
+
 
 /**
  * 决斗、轮盘、大乱斗
@@ -16,6 +20,7 @@ import java.io.Serializable;
 @Table
 @Getter
 @Setter
+
 public class Rodeo implements Serializable {
 
     private static final long serialVersionUID = -5567255189132869882L;
@@ -79,6 +84,42 @@ public class Rodeo implements Serializable {
 
     public void remove() {
         HibernateFactory.delete(this);
+    }
+
+
+    public String getPlayers() {
+        // 如果players为空，直接返回
+        if (players == null || players.isEmpty()) {
+            return "";
+        }
+
+        // 去掉开头和结尾的逗号
+        if (players.startsWith(Constant.MM_SPILT) && players.endsWith(Constant.MM_SPILT)) {
+            return players.substring(1, players.length() - 1);
+        }
+        // 只去掉开头的逗号
+        else if (players.startsWith(Constant.MM_SPILT)) {
+            return players.substring(1);
+        }
+        // 只去掉结尾的逗号
+        else if (players.endsWith(Constant.MM_SPILT)) {
+            return players.substring(0, players.length() - 1);
+        }
+        // 没有逗号的情况
+        return players;
+    }
+
+
+
+    public String[] getPlayerIds() {
+        if (StringUtils.isBlank(players)) {
+            return new String[0];
+        }
+
+        // 分割字符串时忽略空值并返回数组
+        return Arrays.stream(players.split(Constant.MM_SPILT))
+                .filter(StringUtils::isNotBlank)
+                .toArray(String[]::new);
     }
 
 

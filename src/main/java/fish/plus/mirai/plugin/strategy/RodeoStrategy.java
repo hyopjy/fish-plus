@@ -4,9 +4,10 @@ package fish.plus.mirai.plugin.strategy;
 import fish.plus.mirai.plugin.entity.rodeo.Rodeo;
 import fish.plus.mirai.plugin.obj.dto.RodeoRecordGameInfoDto;
 
+
 public interface RodeoStrategy {
 
-    Double DEFAULT_PENALTY = -99.00;
+    Double DEFAULT_PENALTY = -99999.00;
 
     int DEFAULT_SCORE = -99;
 
@@ -22,23 +23,26 @@ public interface RodeoStrategy {
 
     /**
      * 结算
+     *  结束播报
+     *  取消权限
+     *  删除定时
+     *  删除游戏
      */
     public void endGame(Rodeo rodeo);
 
+    /**
+     *  取消权限
+     *  删除定时
+     *  删除游戏
+     */
     public void cancelGame(Rodeo rodeo);
 
-
-    /**
-     * 解析消息
-     *
-     * @param message
-     * @return
-     */
-    RodeoRecordGameInfoDto analyzeMessage(String message);
+//     取消授权
+//     删除定时
+    public void cancelPermissionAndDeleteCronTask(Rodeo rodeo);
 
     void grantPermission(Rodeo rodeo);
 
     void cancelPermission(Rodeo rodeo);
 
-    void removeEndTask(Rodeo redeo);
 }

@@ -5,7 +5,6 @@ import net.mamoe.mirai.console.permission.*;
 import net.mamoe.mirai.console.permission.PermitteeId;
 
 
-
 public class PermissionManager {
 
     private static final String PLUGIN_B_ID = "com.evolvedghost.mutegames";
@@ -18,22 +17,33 @@ public class PermissionManager {
      * 授权指定用户使用决斗命令
      *
      * @param groupId 群组 ID
-     * @param userId 用户 ID
+     * @param userId  用户 ID
      */
     public static void grantDuelPermission(long groupId, long userId, PermissionId permissionId) {
-        PermitteeId permittee = new AbstractPermitteeId.ExactMember(groupId, userId);
-        PermissionService.permit(permittee, permissionId);
+        try {
+            PermitteeId permittee = new AbstractPermitteeId.ExactMember(groupId, userId);
+            PermissionService.permit(permittee, permissionId);
+        } catch (Exception exception) {
+
+        }
+
     }
 
     /**
      * 撤销指定用户的决斗命令权限
      *
      * @param groupId 群组 ID
-     * @param userId 用户 ID
+     * @param userId  用户 ID
      */
     public static void revokeDuelPermission(long groupId, long userId, PermissionId permissionId) {
-        PermitteeId permittee = new AbstractPermitteeId.ExactMember(groupId, userId);
-        PermissionService.cancel(permittee, permissionId, true);
+
+        try {
+            PermitteeId permittee = new AbstractPermitteeId.ExactMember(groupId, userId);
+            PermissionService.cancel(permittee, permissionId, true);
+        } catch (Exception exception) {
+
+        }
+
     }
 
     /**
@@ -87,10 +97,6 @@ public class PermissionManager {
 //
 //        return permissions;
 //    }
-
-
-
-
 
 
     // 所有用户不授权

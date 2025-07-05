@@ -9,7 +9,7 @@ public class RodeoEndGameInfoDto {
     private String player;
 
      // 系统计算赢的场次
-    private int score = RodeoStrategy.DEFAULT_SCORE;
+    private int score;
     // 禁言时长
     private int forbiddenSpeech;
 
