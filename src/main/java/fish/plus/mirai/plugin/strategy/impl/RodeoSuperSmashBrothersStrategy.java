@@ -132,7 +132,7 @@ public class RodeoSuperSmashBrothersStrategy extends RodeoAbstractStrategy {
             RodeoEndGameInfoDto dto = new RodeoEndGameInfoDto();
             dto.setPlayer(player);
 
-            int winCount = -99999;
+            int winCount = DEFAULT_SCORE;
             int totalForbidden = 0;
 
             if (!CollectionUtil.isEmpty(playerRecords)) {

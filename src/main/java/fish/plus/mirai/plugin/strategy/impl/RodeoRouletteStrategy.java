@@ -121,7 +121,7 @@ public class RodeoRouletteStrategy extends RodeoAbstractStrategy {
                             // 计算惩罚得分：禁言时长 ÷ 开枪总数（分母为0时计负分）
                             stats.setPenalty((stats.getShotCount() > 0)
                                     ? NumberUtil.div(stats.getTotalForbidden(), stats.getShotCount())
-                                    : -99999.00);
+                                    : DEFAULT_PENALTY);
                             return stats;
                         })
                 ));

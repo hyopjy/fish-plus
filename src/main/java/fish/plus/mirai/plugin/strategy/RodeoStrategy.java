@@ -9,7 +9,7 @@ public interface RodeoStrategy {
 
     Double DEFAULT_PENALTY = -99999.00;
 
-    int DEFAULT_SCORE = -99;
+    int DEFAULT_SCORE = -99999;
 
     /**
      * 开始
